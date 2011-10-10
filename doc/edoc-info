@@ -1,0 +1,3 @@
+{application,message_box3}.
+{packages,[]}.
+{modules,[message,message_box3_app,message_box3_sup]}.
