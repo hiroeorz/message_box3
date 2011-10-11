@@ -14,7 +14,7 @@
 -define(MaxMessageIdKey, <<"max_message_id">>).
 
 %% API
--export([save_message/2, save_message/3, get_message/1]).
+-export([save_message/2, save_message/3, get_message/1, get_message_list/1]).
 
 %%%===================================================================
 %%% API
@@ -64,6 +64,24 @@ get_message(Id) ->
         Error     -> Error
     end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% 指定されたIdリストに対応するメッセージを取得します。
+%% @end
+%%--------------------------------------------------------------------
+-spec(get_message_list(MessageIdList::[integer()]) -> 
+             {ok, [tuple()]} | {error, Reason::binary()}).
+
+get_message_list(MessageIdList) when is_list(MessageIdList) ->
+    KeyList = lists:map(fun(Id) -> get_message_Key(Id) end, MessageIdList),
+
+    case eredis_pool:q(default, ["MGET" | KeyList]) of
+        {ok, BinList} -> 
+            {ok, lists:map(fun(Bin) -> binary_to_term(Bin) end, BinList)};
+        Error ->
+            Error
+    end.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -73,4 +91,7 @@ get_next_id() ->
     list_to_integer(binary_to_list(MaxIdBin)) + 1.
 
 get_message_Key(Id) when is_integer(Id) ->
-    list_to_binary("msg_" ++ integer_to_list(Id)).
+    list_to_binary("msg_" ++ integer_to_list(Id));
+
+get_message_Key(Id) when is_binary(Id) ->
+    list_to_binary("msg_" ++ binary_to_list(Id)).
