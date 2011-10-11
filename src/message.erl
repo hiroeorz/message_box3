@@ -9,9 +9,10 @@
 -module(message).
 
 %% Include
+-include_lib("eunit/include/eunit.hrl").
 -include("message.hrl").
 
--define(MaxMessageIdKey, <<"max_message_id">>).
+-define(MaxIdKey, <<"max_message_id">>).
 
 %% API
 -export([save_message/2, save_message/3, get_message/1, get_message_list/1]).
@@ -26,7 +27,7 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec(save_message(UserId::integer(), Text::string()) -> 
-             {ok, Id::integer()} | {error, Reason::binary()}).
+             {ok, Id::integer(), Key::binary()} | {error, Reason::binary()}).
 
 save_message(UserId, Text) when is_integer(UserId) and is_list(Text)  ->
     save_message(UserId, Text, undefined).
@@ -44,7 +45,7 @@ save_message(UserId, Text, InReplyTo) when is_integer(UserId) and
     
     Key = get_message_Key(Id),
     case eredis_pool:q(default, ["SET", Key, term_to_binary(Message)]) of
-        {ok, <<"OK">>}  -> {ok, Id};
+        {ok, <<"OK">>}  -> {ok, Id, Key};
         {error, Reason} -> {error, Reason}
     end.
 
@@ -69,15 +70,24 @@ get_message(Id) ->
 %% 指定されたIdリストに対応するメッセージを取得します。
 %% @end
 %%--------------------------------------------------------------------
--spec(get_message_list(MessageIdList::[integer()]) -> 
+-spec(get_message_list(MessageIdList::[integer()] | [binary()]) -> 
              {ok, [tuple()]} | {error, Reason::binary()}).
 
-get_message_list(MessageIdList) when is_list(MessageIdList) ->
+get_message_list([MsgId| _] = MessageIdList) when is_list(MessageIdList) and
+                                                  is_integer(MsgId) ->
     KeyList = lists:map(fun(Id) -> get_message_Key(Id) end, MessageIdList),
+    get_message_list(KeyList);
 
+get_message_list([Key| _] = KeyList) when is_list(KeyList) and
+                                            is_binary(Key) ->
     case eredis_pool:q(default, ["MGET" | KeyList]) of
         {ok, BinList} -> 
-            {ok, lists:map(fun(Bin) -> binary_to_term(Bin) end, BinList)};
+            {ok, lists:map(fun(Bin) ->
+                                   case Bin of
+                                       undefined -> undefined;
+                                       BinData -> binary_to_term(BinData)
+                                   end 
+                           end, BinList)};
         Error ->
             Error
     end.
@@ -87,7 +97,7 @@ get_message_list(MessageIdList) when is_list(MessageIdList) ->
 %%%===================================================================
 
 get_next_id() ->
-    {ok, MaxIdBin} = eredis_pool:q(default, ["INCR", ?MaxMessageIdKey]),
+    {ok, MaxIdBin} = eredis_pool:q(default, ["INCR", ?MaxIdKey]),
     list_to_integer(binary_to_list(MaxIdBin)) + 1.
 
 get_message_Key(Id) when is_integer(Id) ->
