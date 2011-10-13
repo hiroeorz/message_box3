@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 12 Oct 2011 by Hiroe Shin <shin@mac-hiroe-orz-17.local>
 %%%-------------------------------------------------------------------
--module(home_timeline).
+-module(mentions_timeline).
 
 %% API
 -export([add_message_key/2, get_timeline/2]).
@@ -17,28 +17,28 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% ホームタイムラインのリストの末尾にメッセージのキーを追加する。
+%% メンションタイムラインのリストの末尾にメッセージのキーを追加する。
 %% @end
 %%--------------------------------------------------------------------
 -spec(add_message_key(UserId::integer(), MsgKey::binary()) -> ok).
 
 add_message_key(UserId, MsgKey) when is_integer(UserId) and is_binary(MsgKey) ->
-    HomeKey = get_key(UserId),
-    {ok, _} = eredis_pool:q(default, ["RPUSH", HomeKey, MsgKey]),
+    MentionsKey = get_key(UserId),
+    {ok, _} = eredis_pool:q(default, ["RPUSH", MentionsKey, MsgKey]),
     ok.
 
 %%--------------------------------------------------------------------
 %% @doc
-%% ホームタイムラインのリストのメッセージを取得する。
+%% メンションタイムラインのメッセージを取得する。
 %% @end
 %%--------------------------------------------------------------------
 -spec(get_timeline(UserId::integer(), Count::integer()) -> 
              {ok, [tuple()]} | {error, Reason::binary()}).
 
 get_timeline(UserId, Count) ->
-    HomeKey = get_key(UserId),
+    MentionsKey = get_key(UserId),
     {ok, KeyList} = eredis_pool:q(default, 
-                                  ["LRANGE", HomeKey, (0 - Count), -1]),
+                                  ["LRANGE", MentionsKey, (0 - Count), -1]),
     message:get_message_list(KeyList).
 
 %%%===================================================================
@@ -46,4 +46,4 @@ get_timeline(UserId, Count) ->
 %%%===================================================================
 
 get_key(UserId) when is_integer(UserId) ->
-    list_to_binary("h_" ++ integer_to_list(UserId)).
+    list_to_binary("m_" ++ integer_to_list(UserId)).
