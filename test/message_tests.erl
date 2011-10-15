@@ -53,6 +53,7 @@ get_message_list_test() ->
 
 test_before() ->
     eredis_pool:start(),
+    eredis_pool:create_pool(default, 10),
     eredis_pool:q(default, ["DEL", <<"max_message_id">>]),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("msg" ++ integer_to_list(Id)),

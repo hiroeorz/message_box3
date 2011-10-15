@@ -52,6 +52,7 @@ get_timeline_test() ->
 
 test_before() ->
     eredis_pool:start(),
+    eredis_pool:create_pool(default, 10),
     eredis_pool:q(default, ["DEL", <<"mentions_1">>]),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("msg" ++ integer_to_list(Id)),
