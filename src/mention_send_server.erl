@@ -10,6 +10,9 @@
 
 -behaviour(gen_server).
 
+%% Include
+-include_lib("eunit/include/eunit.hrl").
+
 %% API
 -export([start_link/1, stop/0, stop/1]).
 -export([add_mention/2, add_mention/3]).
@@ -124,15 +127,18 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({stop}, State) ->
+    {stop, normal, State};
+
 handle_cast({add_mention, MsgKey, TextBin}, State) ->
     NameList = get_reply_list(TextBin),
     IdList = msb3_user:get_id_list(NameList),
-    
+
     lists:map(fun(Id) ->
                       mentions_timeline:add_message_key(Id, MsgKey)
               end, IdList),
     
-    {reply, State}.
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private

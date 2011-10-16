@@ -58,11 +58,17 @@ get_id_list(NameList) when is_list(NameList) ->
 
     case eredis_pool:q(default, ["MGET" | KeyList]) of
         {ok, undefined} -> [];
-        {ok, UserIdList} -> 
-            lists:map(fun(IdBin) -> 
-                              list_to_integer(binary_to_list(IdBin))
-                      end,
-                      UserIdList)
+        {ok, UserIdList} ->
+            List = lists:foldl(fun(IdBin, Result) ->
+                                       case IdBin of 
+                                           undefined -> Result;
+                                           Bin ->
+                                               Id = list_to_integer(
+                                                      binary_to_list(Bin)),
+                                               [Id | Result]
+                                       end
+                               end, [], UserIdList),
+            lists:reverse(List)
     end.    
 
 %%--------------------------------------------------------------------

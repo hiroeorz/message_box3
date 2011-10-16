@@ -8,6 +8,9 @@
 %%%-------------------------------------------------------------------
 -module(mentions_timeline).
 
+%%Include
+-include_lib("eunit/include/eunit.hrl").
+
 %% API
 -export([add_message_key/2, get_timeline/2]).
 

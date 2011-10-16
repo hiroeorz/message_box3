@@ -55,14 +55,14 @@ test_before() ->
     eredis_pool:create_pool(default, 10),
     eredis_pool:q(default, ["DEL", <<"mentions_1">>]),
     lists:map(fun(Id) -> 
-                      Key = list_to_binary("msg" ++ integer_to_list(Id)),
+                      Key = list_to_binary("m_" ++ integer_to_list(Id)),
                       eredis_pool:q(default, ["DEL", Key])
               end, lists:seq(1, 100)).
 
 test_after() ->
     eredis_pool:q(default, ["DEL", <<"mentions_1">>]),
     lists:map(fun(Id) -> 
-                      Key = list_to_binary("msg" ++ integer_to_list(Id)),
+                      Key = list_to_binary("m_" ++ integer_to_list(Id)),
                       eredis_pool:q(default, ["DEL", Key])
               end, lists:seq(1, 100)).
 
