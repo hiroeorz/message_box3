@@ -98,7 +98,7 @@ get_message_list([Key| _] = KeyList) when is_list(KeyList) and
 
 get_next_id() ->
     {ok, MaxIdBin} = eredis_pool:q(default, ["INCR", ?MaxIdKey]),
-    list_to_integer(binary_to_list(MaxIdBin)) + 1.
+    list_to_integer(binary_to_list(MaxIdBin)).
 
 get_message_Key(Id) when is_integer(Id) ->
     list_to_binary("msg_" ++ integer_to_list(Id));

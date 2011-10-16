@@ -11,10 +11,22 @@
   {env, [
           {eredis_pools, [
                    {default, [
-                              {size, 30},
-                              {max_overflow, 10},
+                              {size, 100},
+                              {max_overflow, 100},
                               {host, "127.0.0.1"},
                               {port, 6379}
+                             ]}
+                  ]},
+          {home_send_server_pools, [
+                   {home, [
+                              {size, 40},
+                              {max_overflow, 40}
+                             ]}
+                  ]},
+          {mention_send_server_pools, [
+                   {mention, [
+                              {size, 20},
+                              {max_overflow, 40}
                              ]}
                   ]}
   ]}

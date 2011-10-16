@@ -6,21 +6,19 @@
 %%% @end
 %%% Created : 16 Oct 2011 by Hiroe Shin <shin@u720170.xgsfmg6.imtp.tachikawa.mopera.net>
 %%%-------------------------------------------------------------------
--module(home_send_server).
+-module(mention_send_server).
 
 -behaviour(gen_server).
 
-%% Include
--include_lib("eunit/include/eunit.hrl").
-
 %% API
 -export([start_link/1, stop/0, stop/1]).
--export([add_home_to_followers/2, add_home_to_followers/3]).
+-export([add_mention/2, add_mention/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
+-define(SEPARATOR, "\s\n").
 -define(SERVER, ?MODULE). 
 
 -record(state, {}).
@@ -33,6 +31,7 @@
 %% @doc
 %% Starts the server
 %%
+%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link(_Args) when is_list(_Args) ->
@@ -50,31 +49,34 @@ stop() ->
 %%--------------------------------------------------------------------
 %% @doc 
 %% プロセスプールからワーカーを一つ取り出して以下の処理を行います。
-%% 受け取ったIdのユーザの各フォロワーのhomeにメッセージIdを保存する。
-%% 処理は非同期に行います。
+%% 受け取ったテキストからリプライ送信先ユーザを特定して各ユーザのmentionsリストに
+%% メッセージのキーを保存します。
+%% 処理は同期的に行います。
 %% @end
 %%--------------------------------------------------------------------
--spec(add_home_to_followers(UserId::integer(), MsgKey::binary()) -> ok).
+-spec(add_mention(MsgKey::binary(), TextBin::binary()) -> ok).
 
-add_home_to_followers(UserId, MsgKey) when is_integer(UserId) and 
-                                           is_binary(MsgKey) ->
-    Worker = poolboy:checkout(home_send_server_pools),
-    Reply = home_send_server:add_home_to_followers(Worker, UserId, MsgKey),
-    poolboy:checkin(home_send_server_pools, Worker),
+add_mention(MsgKey, TextBin) when is_binary(MsgKey) and is_binary(TextBin) ->
+    Worker = poolboy:checkout(mentions_send_server_pool),
+    Reply = mention_send_server:add_mention(Worker, MsgKey, TextBin),
+    poolboy:checkin(mentions_send_server_pool, Worker),
     Reply.
 
 %%--------------------------------------------------------------------
 %% @doc 
-%% 受け取ったIdのユーザの全フォロワーのhomeに受け取ったメッセージへのキーを保存する。
-%% 処理は非同期に行います。
+%% 受け取ったテキストからリプライ送信先ユーザを特定して各ユーザのmentionsリストに
+%% メッセージのキーを保存します。
+%% 処理は同期的に行います。
 %% @end
 %%--------------------------------------------------------------------
--spec(add_home_to_followers(Name_OR_Pid::pid()|atom(), 
-                            UserId::integer(), MsgKey::binary()) -> ok).
+-spec(add_mention(Name_OR_Pid::pid()|atom(), 
+                               MsgKey::binary(), 
+                               TextBin::binary()) -> ok).
 
-add_home_to_followers(Name_OR_Pid, UserId, MsgKey) when is_integer(UserId) and 
-                                                        is_binary(MsgKey) ->
-    gen_server:cast(Name_OR_Pid, {add_home_to_followers, UserId, MsgKey}).
+add_mention(Name_OR_Pid, MsgKey, TextBin) when is_binary(MsgKey) and
+                                               is_binary(TextBin) ->
+    gen_server:cast(Name_OR_Pid, {add_mention, MsgKey, TextBin}).
+
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -122,16 +124,15 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({stop}, State) ->
-    {stop, normal, State};
-
-handle_cast({add_home_to_followers, UserId, MsgKey}, State) ->
-    Followers = user_relation:get_followers(UserId),
+handle_cast({add_mention, MsgKey, TextBin}, State) ->
+    NameList = get_reply_list(TextBin),
+    IdList = msb3_user:get_id_list(NameList),
+    
     lists:map(fun(Id) ->
-                      home_timeline:add_message_key(Id, MsgKey)
-              end, Followers),
-
-    {noreply, State}.
+                      mentions_timeline:add_message_key(Id, MsgKey)
+              end, IdList),
+    
+    {reply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -174,3 +175,27 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%%
+%% @doc create reply name list from tweet text.
+%%
+-spec(get_reply_list(string()) -> list(atom()) ).
+
+get_reply_list(Text) when is_binary(Text) ->
+    get_reply_list(binary_to_list(Text));
+
+get_reply_list(Text) when is_list(Text) ->
+    Tokens = string:tokens(Text, ?SEPARATOR),
+    get_reply_list(Tokens, []).
+
+get_reply_list([], List) -> lists:usort(List);
+
+get_reply_list(Tokens, List) when is_list(Tokens) ->
+    [Token | Tail] = Tokens,
+    case string:sub_string(Token, 1, 1) of
+	"@" ->
+	    UserNameStr = string:sub_string(Token, 2, length(Token)),
+	    get_reply_list(Tail, [UserNameStr | List]);
+	_Other ->
+	    get_reply_list(Tail, List)
+    end.

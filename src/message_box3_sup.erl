@@ -1,5 +1,13 @@
-
+%%%-------------------------------------------------------------------
+%%% @author Hiroe Shin <shin@u720170.xgsfmg6.imtp.tachikawa.mopera.net>
+%%% @copyright (C) 2011, Hiroe Shin
+%%% @doc
+%%%
+%%% @end
+%%% Created : 16 Oct 2011 by Hiroe Shin <shin@u720170.xgsfmg6.imtp.tachikawa.mopera.net>
+%%%-------------------------------------------------------------------
 -module(message_box3_sup).
+-include_lib("eunit/include/eunit.hrl").
 
 -behaviour(supervisor).
 
@@ -15,6 +23,7 @@
 %% ===================================================================
 %% API functions
 %% ===================================================================
+
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
@@ -24,24 +33,24 @@ start_link() ->
 
 init([]) ->
     RestartStrategy = one_for_one,
-    MaxRestarts = 10,
+    MaxRestarts = 5,
     MaxSecondsBetweenRestarts = 10,
 
     SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
     Restart = permanent,
-    Shutdown = 5000,
+    Shutdown = 2000,
     Type = worker,
 
-    {ok, Pools} = application:get_env(message_box3, eredis_pools),
+    HomeSendServerSup = {home_send_server_sup, 
+                         {home_send_server_sup, start_link, []},
+                         Restart, Shutdown, Type, 
+                         [home_send_server_sup, home_send_server]},
 
-    PoolSpecs = lists:map(fun({PoolName, PoolConfig}) ->
-                                  Args = [{name, {local, PoolName}},
-                                          {worker_module, eredis}]
-                                      ++ PoolConfig,
-                                  
-                                  {PoolName, {poolboy, start_link, [Args]},
-                                   Restart, Shutdown, Type, [poolboy, eredis]}
-                          end, Pools),
+    MentionSendServerSup = {mention_send_server_sup, 
+                            {mention_send_server_sup, start_link, []},
+                            Restart, Shutdown, Type, 
+                            [mention_send_server_sup, mention_send_server]},
 
-    {ok, {SupFlags, PoolSpecs}}.
+    {ok, {SupFlags, [HomeSendServerSup, MentionSendServerSup]}}.
+

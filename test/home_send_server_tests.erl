@@ -9,14 +9,16 @@
 -module(home_send_server_tests).
 -include_lib("eunit/include/eunit.hrl").
 
+-define(NAME, home_send_server).
+
 add_home_to_followers_test() ->
     test_before(),
     UserId = 1,
     Ids = lists:seq(2, 10001),
-    LimitInterval = 500,
+    LimitInterval = 200,
     MsgKey = <<"msg_101">>,
     lists:map(fun(Id) -> user_relation:add_follower(UserId, Id) end, Ids),
-    home_send_server:add_home_to_followers(1, MsgKey),
+    home_send_server:add_home_to_followers(?NAME, 1, MsgKey),
     msb3_util:sleep(LimitInterval),
 
     lists:map(fun(Id) ->
@@ -48,7 +50,7 @@ test_before() ->
                       Key = list_to_binary("follow_" ++ integer_to_list(Id)),
                       eredis_pool:q(default, ["DEL", Key])
               end, lists:seq(1, 100)),
-    home_send_server:start_link().
+    home_send_server:start_link(?NAME).
 
 test_after() ->
     lists:map(fun(Id) -> 
@@ -63,4 +65,4 @@ test_after() ->
                       Key = list_to_binary("follow_" ++ integer_to_list(Id)),
                       eredis_pool:q(default, ["DEL", Key])
               end, lists:seq(1, 100)),
-    home_send_server:stop().
+    home_send_server:stop(?NAME).
