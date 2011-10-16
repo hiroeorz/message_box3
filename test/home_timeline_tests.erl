@@ -50,17 +50,21 @@ get_timeline_test() ->
     ?assertEqual(103, Msg3#message.user_id),
     test_after().
 
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
 test_before() ->
     eredis_pool:start(),
     eredis_pool:create_pool(default, 10),
-    eredis_pool:q(default, ["DEL", <<"home_1">>]),
+    eredis_pool:q(default, ["DEL", <<"h_1">>]),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("msg" ++ integer_to_list(Id)),
                       eredis_pool:q(default, ["DEL", Key])
               end, lists:seq(1, 100)).
 
 test_after() ->
-    eredis_pool:q(default, ["DEL", <<"home_1">>]),
+    eredis_pool:q(default, ["DEL", <<"h_1">>]),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("msg" ++ integer_to_list(Id)),
                       eredis_pool:q(default, ["DEL", Key])
