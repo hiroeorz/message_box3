@@ -53,16 +53,16 @@ stop() ->
 %% プロセスプールからワーカーを一つ取り出してadd_message/4の処理を行います。
 %% @end
 %%--------------------------------------------------------------------
--spec(add_message(UserId::integer(), TextBin::binary(), 
+-spec(add_message(UserId::integer(), Text::list(), 
                   InReplyTo::integer()) -> 
     {ok, MessageId::integer(), MessgeKey::binary()} | 
     {error, Reason::binary()}).
 
-add_message(UserId, TextBin, InReplyTo) when is_integer(UserId) and 
-                                             is_binary(TextBin) and
-                                             is_integer(InReplyTo) ->
+add_message(UserId, Text, InReplyTo) when is_integer(UserId) and 
+                                          is_list(Text) and
+                                          is_integer(InReplyTo) ->
     Worker = poolboy:checkout(mentions_send_server_pool),
-    Reply = message_send_server:add_message(Worker, UserId, TextBin, InReplyTo),
+    Reply = message_send_server:add_message(Worker, UserId, Text, InReplyTo),
     poolboy:checkin(mentions_send_server_pool, Worker),
     Reply.
 
@@ -71,15 +71,14 @@ add_message(UserId, TextBin, InReplyTo) when is_integer(UserId) and
 %% @end
 %%--------------------------------------------------------------------
 -spec(add_message(Name_OR_Pid::pid()|atom(), UserId::integer(), 
-                  TextBin::binary(), InReplyTo::integer()) -> 
+                  Text::list(), InReplyTo::integer()) -> 
     {ok, MessageId::integer(), MessgeKey::binary()} | 
     {error, Reason::binary()}).
 
-add_message(Name_OR_Pid, 
-            UserId, TextBin, InReplyTo) when is_integer(UserId) and
-                                             is_binary(TextBin) and
-                                             is_integer(InReplyTo) ->
-    gen_server:cast(Name_OR_Pid, {add_message, UserId, TextBin, InReplyTo}).
+add_message(Name_OR_Pid, UserId, Text, InReplyTo) when is_integer(UserId) and
+                                                       is_list(Text) and
+                                                       is_integer(InReplyTo) ->
+    gen_server:call(Name_OR_Pid, {add_message, UserId, Text, InReplyTo}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -113,8 +112,8 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({add_message, UserId, TextBin, InReplyTo}, _From, State) ->
-    Reply = message:save_message(UserId, TextBin, InReplyTo),
+handle_call({add_message, UserId, Text, InReplyTo}, _From, State) ->
+    Reply = message:save_message(UserId, Text, InReplyTo),
     {reply, Reply, State}.
 
 %%--------------------------------------------------------------------
