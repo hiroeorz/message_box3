@@ -1,12 +1,12 @@
 %%%-------------------------------------------------------------------
-%%% @author Hiroe Shin <shin@u720170.xgsfmg6.imtp.tachikawa.mopera.net>
+%%% @author Hiroe Shin <hiroe.orz@gmail.com>
 %%% @copyright (C) 2011, Hiroe Shin
 %%% @doc
 %%%
 %%% @end
 %%% Created : 17 Oct 2011 by Hiroe Shin <hiroe.orz@gmail.com>
 %%%-------------------------------------------------------------------
--module(mention_send_server).
+-module(message_send_server).
 
 -behaviour(gen_server).
 
@@ -15,13 +15,12 @@
 
 %% API
 -export([start_link/1, stop/0, stop/1]).
--export([add_mention/2, add_mention/3]).
+-export([add_message/3, add_message/4]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--define(SEPARATOR, "\s\n").
 -define(SERVER, ?MODULE). 
 
 -record(state, {}).
@@ -51,35 +50,36 @@ stop() ->
 
 %%--------------------------------------------------------------------
 %% @doc 
-%% プロセスプールからワーカーを一つ取り出して以下の処理を行います。
-%% 受け取ったテキストからリプライ送信先ユーザを特定して各ユーザのmentionsリストに
-%% メッセージのキーを保存します。
-%% 処理は同期的に行います。
+%% プロセスプールからワーカーを一つ取り出してadd_message/4の処理を行います。
 %% @end
 %%--------------------------------------------------------------------
--spec(add_mention(MsgKey::binary(), TextBin::binary()) -> ok).
+-spec(add_message(UserId::integer(), TextBin::binary(), 
+                  InReplyTo::integer()) -> 
+    {ok, MessageId::integer(), MessgeKey::binary()} | 
+    {error, Reason::binary()}).
 
-add_mention(MsgKey, TextBin) when is_binary(MsgKey) and is_binary(TextBin) ->
+add_message(UserId, TextBin, InReplyTo) when is_integer(UserId) and 
+                                             is_binary(TextBin) and
+                                             is_integer(InReplyTo) ->
     Worker = poolboy:checkout(mentions_send_server_pool),
-    Reply = mention_send_server:add_mention(Worker, MsgKey, TextBin),
+    Reply = message_send_server:add_message(Worker, UserId, TextBin, InReplyTo),
     poolboy:checkin(mentions_send_server_pool, Worker),
     Reply.
 
 %%--------------------------------------------------------------------
-%% @doc 
-%% 受け取ったテキストからリプライ送信先ユーザを特定して各ユーザのmentionsリストに
-%% メッセージのキーを保存します。
-%% 処理は同期的に行います。
+%% @doc 受け取ったメッセージを保存します。
 %% @end
 %%--------------------------------------------------------------------
--spec(add_mention(Name_OR_Pid::pid()|atom(), 
-                               MsgKey::binary(), 
-                               TextBin::binary()) -> ok).
+-spec(add_message(Name_OR_Pid::pid()|atom(), UserId::integer(), 
+                  TextBin::binary(), InReplyTo::integer()) -> 
+    {ok, MessageId::integer(), MessgeKey::binary()} | 
+    {error, Reason::binary()}).
 
-add_mention(Name_OR_Pid, MsgKey, TextBin) when is_binary(MsgKey) and
-                                               is_binary(TextBin) ->
-    gen_server:cast(Name_OR_Pid, {add_mention, MsgKey, TextBin}).
-
+add_message(Name_OR_Pid, 
+            UserId, TextBin, InReplyTo) when is_integer(UserId) and
+                                             is_binary(TextBin) and
+                                             is_integer(InReplyTo) ->
+    gen_server:cast(Name_OR_Pid, {add_message, UserId, TextBin, InReplyTo}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -113,8 +113,8 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(_Request, _From, State) ->
-    Reply = ok,
+handle_call({add_message, UserId, TextBin, InReplyTo}, _From, State) ->
+    Reply = message:save_message(UserId, TextBin, InReplyTo),
     {reply, Reply, State}.
 
 %%--------------------------------------------------------------------
@@ -127,17 +127,7 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({stop}, State) ->
-    {stop, normal, State};
-
-handle_cast({add_mention, MsgKey, TextBin}, State) ->
-    NameList = get_reply_list(TextBin),
-    IdList = msb3_user:get_id_list(NameList),
-
-    lists:map(fun(Id) ->
-                      mentions_timeline:add_message_key(Id, MsgKey)
-              end, IdList),
-    
+handle_cast(_Msg, State) ->
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -181,27 +171,3 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-%%
-%% @doc create reply name list from tweet text.
-%%
--spec(get_reply_list(string()) -> list(atom()) ).
-
-get_reply_list(Text) when is_binary(Text) ->
-    get_reply_list(binary_to_list(Text));
-
-get_reply_list(Text) when is_list(Text) ->
-    Tokens = string:tokens(Text, ?SEPARATOR),
-    get_reply_list(Tokens, []).
-
-get_reply_list([], List) -> lists:usort(List);
-
-get_reply_list(Tokens, List) when is_list(Tokens) ->
-    [Token | Tail] = Tokens,
-    case string:sub_string(Token, 1, 1) of
-	"@" ->
-	    UserNameStr = string:sub_string(Token, 2, length(Token)),
-	    get_reply_list(Tail, [UserNameStr | List]);
-	_Other ->
-	    get_reply_list(Tail, List)
-    end.

@@ -18,14 +18,20 @@
                              ]}
                   ]},
           {home_send_server_pools, [
-                   {home, [
+                   {home_send_server_pool, [
                               {size, 40},
                               {max_overflow, 40}
                              ]}
                   ]},
           {mention_send_server_pools, [
-                   {mention, [
+                   {mention_send_server_pool, [
                               {size, 20},
+                              {max_overflow, 40}
+                             ]}
+                  ]},
+          {message_send_server_pools, [
+                   {message_send_server_pool, [
+                              {size, 40},
                               {max_overflow, 40}
                              ]}
                   ]}

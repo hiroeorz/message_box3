@@ -32,8 +32,9 @@
 save_message(UserId, Text) when is_integer(UserId) and is_list(Text)  ->
     save_message(UserId, Text, undefined).
 
--spec(save_message(UserId::integer(), Text::string(), InReplyTo::integer()) ->
-             {ok, Id::integer()} | {error, Reason::binary()}).
+-spec(save_message(UserId::integer(), Text::string(), 
+                   InReplyTo::integer()|undefined) ->
+             {ok, Id::integer(), Key::binary()} | {error, Reason::binary()}).
 
 save_message(UserId, Text, InReplyTo) when is_integer(UserId) and
                                            is_list(Text)  ->

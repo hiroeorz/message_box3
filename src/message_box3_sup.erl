@@ -52,5 +52,11 @@ init([]) ->
                             Restart, Shutdown, Type, 
                             [mention_send_server_sup, mention_send_server]},
 
-    {ok, {SupFlags, [HomeSendServerSup, MentionSendServerSup]}}.
+    MessageSendServerSup = {message_send_server_sup, 
+                            {message_send_server_sup, start_link, []},
+                            Restart, Shutdown, Type, 
+                            [message_send_server_sup, message_send_server]},
+
+    {ok, {SupFlags, [HomeSendServerSup, MentionSendServerSup,
+                     MessageSendServerSup]}}.
 

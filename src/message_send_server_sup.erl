@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 16 Oct 2011 by Hiroe Shin <hiroe.orz@gmail.com>
 %%%-------------------------------------------------------------------
--module(mention_send_server_sup).
+-module(message_send_server_sup).
 
 -behaviour(supervisor).
 
@@ -63,16 +63,16 @@ init([]) ->
     Shutdown = 5000,
     Type = worker,
 
-    {ok, Pools} = application:get_env(message_box3, mention_send_server_pools),
+    {ok, Pools} = application:get_env(message_box3, message_send_server_pools),
 
     PoolSpecs = lists:map(fun({PoolName, PoolConfig}) ->
                                   Args = [{name, {local, PoolName}},
-                                          {worker_module, mention_send_server}]
+                                          {worker_module, message_send_server}]
                                       ++ PoolConfig,
                                   
                                   {PoolName, {poolboy, start_link, [Args]},
                                    Restart, Shutdown, Type, 
-                                   [poolboy, mention_send_server]}
+                                   [poolboy, message_send_server]}
                           end, Pools),
 
     {ok, {SupFlags, PoolSpecs}}.
