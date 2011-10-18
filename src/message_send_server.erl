@@ -33,17 +33,23 @@
 %% @doc
 %% Starts the server
 %%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
+-spec(start_link(Name_Or_Args::list()|atom()) -> 
+             {ok, Pid::pid()} | ignore | {error, Error::atom()}).
+
 start_link(_Args) when is_list(_Args) ->
     gen_server:start_link(?MODULE, [], []);
 
 start_link(Name) when is_atom(Name) ->
     gen_server:start_link({local, Name}, ?MODULE, [], []).
 
+-spec(stop(Name_OR_Pid::atom()|pid()) -> ok ).
+
 stop(Name_OR_Pid) ->
     gen_server:cast(Name_OR_Pid, {stop}).
+
+-spec(stop() -> ok ).
 
 stop() -> 
     gen_server:cast(?MODULE, stop).

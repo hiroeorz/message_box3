@@ -1,6 +1,6 @@
 
 
-#Module message_box3_sup#
+#Module home_send_server_sup#
 * [Description](#description)
 * [Function Index](#index)
 * [Function Details](#functions)
@@ -19,21 +19,13 @@ __Authors:__ Hiroe Shin ([`shin@u720170.xgsfmg6.imtp.tachikawa.mopera.net`](mail
 ##Function Index##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#init-1">init/1</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-0">start_link/0</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#start_link-0">start_link/0</a></td><td>
+Starts the supervisor.</td></tr></table>
 
 
 <a name="functions"></a>
 
 ##Function Details##
-
-<a name="init-1"></a>
-
-###init/1##
-
-
-
-
-`init(X1) -> any()`
 
 <a name="start_link-0"></a>
 
@@ -42,5 +34,11 @@ __Authors:__ Hiroe Shin ([`shin@u720170.xgsfmg6.imtp.tachikawa.mopera.net`](mail
 
 
 
-`start_link() -> any()`
+<pre>start_link() -&gt; {ok, Pid} | ignore | {error, Error}</pre>
+<br></br>
 
+
+
+
+
+Starts the supervisor

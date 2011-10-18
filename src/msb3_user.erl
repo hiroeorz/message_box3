@@ -13,7 +13,7 @@
 -include("user.hrl").
 
 %% API
--export([add_user/3, get_id/1, get_id_list/1]).
+-export([add_user/3, get_user/1, get_id/1, get_id_list/1]).
 
 -define(MaxIdKey, <<"max_usr_id">>).
 -define(USER_NAME_INDEX_KEY, "usr_name_index_").
@@ -28,16 +28,35 @@ add_user(Name, Mail, Password) when is_list(Name) and is_list(Mail) and
                                     is_list(Password) ->
     UserId = get_next_id(),
     Key = "usr_" ++ integer_to_list(UserId),
-    User = #user{id = UserId, name = Name, password = Password,
-                 created_at = {date(), time()}},
+    User1 = #user{id = UserId, name = Name, password = Password,
+                 email = Mail, created_at = {date(), time()}},
 
-    case eredis_pool:q(default, ["SET", Key, term_to_binary(User)]) of
+    CryptedPassword = msb3_util:create_crypted_password(User1, Password),
+    User2 = User1#user{password = CryptedPassword},
+
+    case eredis_pool:q(default, ["SET", Key, term_to_binary(User2)]) of
         {ok, _} ->
             case add_user_name_index(UserId, Name) of
                 ok -> {ok, UserId};
                 _ -> {error, index_save_error} %% todo 後始末
             end;
         Other -> Other
+    end.
+
+-spec(get_user(Id_OR_Name::integer() | string()) -> 
+             {ok, User::#user{}} | {error, not_found}).
+
+get_user(Name) when is_list(Name) ->
+    case get_id(Name) of
+        {error, not_found} -> {error, not_found};
+        {ok, UserId} -> get_user(UserId)
+    end;
+
+get_user(Id) when is_integer(Id) ->
+    Key = "usr_" ++ integer_to_list(Id),
+    case eredis_pool:q(default, ["GET", Key]) of
+        {ok, undefined} -> {error, not_found};
+        {ok, User} -> {ok, User}
     end.
 
 -spec(get_id(Name::string()) -> {ok, integer()} | {error, not_found}).
@@ -70,12 +89,6 @@ get_id_list(NameList) when is_list(NameList) ->
                                end, [], UserIdList),
             lists:reverse(List)
     end.    
-
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
 
 %%%===================================================================
 %%% Internal functions

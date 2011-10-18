@@ -9,6 +9,7 @@
                  ]},
   {mod, { message_box3_app, []}},
   {env, [
+          {session_expire, 86400},
           {eredis_pools, [
                    {default, [
                               {size, 100},

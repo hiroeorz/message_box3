@@ -4,18 +4,18 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 16 Oct 2011 by Hiroe Shin <shin@u720170.xgsfmg6.imtp.tachikawa.mopera.net>
+%%% Created : 18 Oct 2011 by Hiroe Shin <shin@u720170.xgsfmg6.imtp.tachikawa.mopera.net>
 %%%-------------------------------------------------------------------
--module(home_send_server).
+-module(msb3_login_server).
 
 -behaviour(gen_server).
 
 %% Include
--include_lib("eunit/include/eunit.hrl").
+-include("user.hrl").
 
 %% API
--export([start_link/1, stop/0, stop/1]).
--export([add_home_to_followers/2, add_home_to_followers/3]).
+-export([start_link/0]).
+-export([authenticate/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -33,55 +33,20 @@
 %% @doc
 %% Starts the server
 %%
+%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link(Name_Or_Args::list()|atom()) -> 
-             {ok, Pid::pid()} | ignore | {error, Error::atom()}).
+start_link() ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-start_link(_Args) when is_list(_Args) ->
-    gen_server:start_link(?MODULE, [], []);
 
-start_link(Name) when is_atom(Name) ->
-    gen_server:start_link({local, Name}, ?MODULE, [], []).
+-spec(authenticate(Pid::pid(), Name::string(), Password::string()) -> 
+             {ok, SessionKey::string()} | {error, password_incollect}).
 
--spec(stop(Name_OR_Pid::atom()|pid()) -> ok ).
+authenticate(Pid, Name, Password) when is_list(Name) and is_list(Password) ->
+    gen_server:call(Pid, {authenticate, Name, Password}).
 
-stop(Name_OR_Pid) ->
-    gen_server:cast(Name_OR_Pid, {stop}).
-
--spec(stop() -> ok ).
-
-stop() -> 
-    gen_server:cast(?MODULE, stop).
-
-%%--------------------------------------------------------------------
-%% @doc 
-%% プロセスプールからワーカーを一つ取り出して以下の処理を行います。
-%% 受け取ったIdのユーザの各フォロワーのhomeにメッセージIdを保存する。
-%% 処理は非同期に行います。
-%% @end
-%%--------------------------------------------------------------------
--spec(add_home_to_followers(UserId::integer(), MsgKey::binary()) -> ok).
-
-add_home_to_followers(UserId, MsgKey) when is_integer(UserId) and 
-                                           is_binary(MsgKey) ->
-    Worker = poolboy:checkout(home_send_server_pools),
-    Reply = home_send_server:add_home_to_followers(Worker, UserId, MsgKey),
-    poolboy:checkin(home_send_server_pools, Worker),
-    Reply.
-
-%%--------------------------------------------------------------------
-%% @doc 
-%% 受け取ったIdのユーザの全フォロワーのhomeに受け取ったメッセージへのキーを保存する。
-%% 処理は非同期に行います。
-%% @end
-%%--------------------------------------------------------------------
--spec(add_home_to_followers(Name_OR_Pid::pid()|atom(), 
-                            UserId::integer(), MsgKey::binary()) -> ok).
-
-add_home_to_followers(Name_OR_Pid, UserId, MsgKey) when is_integer(UserId) and 
-                                                        is_binary(MsgKey) ->
-    gen_server:cast(Name_OR_Pid, {add_home_to_followers, UserId, MsgKey}).
+%%check_session(UserId, SessionKey)
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -115,8 +80,26 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(_Request, _From, State) ->
-    Reply = ok,
+handle_call({authenticate, Name, Password}, _From, State) ->
+    Reply = case msb3_user:get_user(Name) of
+                {ok, User} ->
+                    CryptedPassword = 
+                        msb3_util:create_crypted_password(User, Password),
+                    
+                    if User#user.password == CryptedPassword ->
+                            Id = User#user.id,
+                            Password = User#user.password,
+                            SessionKey = msb3_util:create_session_key(Id, 
+                                                                      Password),
+                            ok = msb3_session:update_session(Id, SessionKey),
+                            {ok, SessionKey};
+                       true ->
+                            {error, password_incollect}
+                    end;
+                _ ->
+                    {error, password_incollect}
+            end,
+
     {reply, Reply, State}.
 
 %%--------------------------------------------------------------------
@@ -129,15 +112,7 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({stop}, State) ->
-    {stop, normal, State};
-
-handle_cast({add_home_to_followers, UserId, MsgKey}, State) ->
-    Followers = user_relation:get_followers(UserId),
-    lists:map(fun(Id) ->
-                      home_timeline:add_message_key(Id, MsgKey)
-              end, Followers),
-
+handle_cast(_Msg, State) ->
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -181,3 +156,4 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+    
