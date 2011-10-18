@@ -15,7 +15,7 @@
 
 %% API
 -export([start_link/0]).
--export([authenticate/3]).
+-export([authenticate/3, login/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -30,23 +30,35 @@
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc
-%% Starts the server
-%%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%% @doc Starts the server
 %% @end
 %%--------------------------------------------------------------------
+-spec(start_link() -> {ok, Pid::pid()} | ignore | {error, Error::atom()} ).
+
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 
+%%--------------------------------------------------------------------
+%% @doc 認証を行い、認証にパスしたらセッションキーを新たに生成して返す。
+%% @end
+%%--------------------------------------------------------------------
 -spec(authenticate(Pid::pid(), Name::string(), Password::string()) -> 
              {ok, SessionKey::string()} | {error, password_incollect}).
 
-authenticate(Pid, Name, Password) when is_list(Name) and is_list(Password) ->
+authenticate(Pid, Name, Password) when is_pid(Pid) and is_list(Name) and 
+                                       is_list(Password) ->
     gen_server:call(Pid, {authenticate, Name, Password}).
 
-%%check_session(UserId, SessionKey)
+%%--------------------------------------------------------------------
+%% @doc 
+%% ユーザIdとセッションの組み合わせが既に認証済みか確認する
+%% 確認がとれた場合はセッションの有効期限を延ばす
+%% @end
+%%--------------------------------------------------------------------
+login(Pid, UserId, SessionKey)  when is_pid(Pid) and is_integer(UserId) and 
+                                     is_list(SessionKey) ->
+    gen_server:call(Pid, {login, UserId, SessionKey}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -91,7 +103,7 @@ handle_call({authenticate, Name, Password}, _From, State) ->
                             Password = User#user.password,
                             SessionKey = msb3_util:create_session_key(Id, 
                                                                       Password),
-                            ok = msb3_session:update_session(Id, SessionKey),
+                            ok = msb3_session:update_expire(Id, SessionKey),
                             {ok, SessionKey};
                        true ->
                             {error, password_incollect}
@@ -112,7 +124,15 @@ handle_call({authenticate, Name, Password}, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast(_Msg, State) ->
+handle_cast({login, UserId, SessionKey}, State) ->
+    case msb3_session:check_session_expire(UserId, SessionKey) of
+        ok -> 
+            msb3_session:update_expire(UserId, SessionKey),
+            ok;
+        expired ->
+            expired
+    end,
+
     {noreply, State}.
 
 %%--------------------------------------------------------------------

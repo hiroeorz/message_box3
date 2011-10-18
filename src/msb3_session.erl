@@ -9,7 +9,7 @@
 -module(msb3_session).
 
 %% API
--export([add_new_session/2, update_session/2, check_session_expire/2]).
+-export([add_new_session/2, update_expire/2, check_session_expire/2]).
 
 %%%===================================================================
 %%% API
@@ -24,21 +24,23 @@
 add_new_session(UserId, SessionKey) ->
     Key = get_list_key(UserId),
     eredis_pool:q(default, ["SADD", Key, SessionKey]),
-    update_session(UserId, SessionKey).
+    update_expire(UserId, SessionKey).
 
 %%--------------------------------------------------------------------
 %% @doc セッションの有効期限を延長する
 %% @end
 %%--------------------------------------------------------------------
--spec(update_session(UserId::integer(), SessionKey::string()) -> ok).
+-spec(update_expire(UserId::integer(), SessionKey::string()) -> ok).
 
-update_session(UserId, SessionKey) ->
+update_expire(UserId, SessionKey) ->
     Key = get_key(SessionKey),
     {ok, Expire} = application:get_env(message_box3, session_expire),
     eredis_pool:q(default, ["SETEX", Key, Expire, UserId]).
 
 %%--------------------------------------------------------------------
-%% @doc セッションが有効かどうか確認する
+%% @doc 
+%% セッションが有効かどうか確認する
+%% 無効であればユーザのセッションリストから削除する
 %% @end
 %%--------------------------------------------------------------------
 -spec(check_session_expire(UserId::integer(), SessionKey::string()) -> 
