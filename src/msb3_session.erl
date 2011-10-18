@@ -51,12 +51,12 @@ check_session_expire(UserId, SessionKey) ->
     case eredis_pool:q(default, ["SISMEMBER", SessListKey, SessionKey]) of
         {ok, <<"0">>} -> expired;
         {ok, <<"1">>} ->
-            Ttl = eredis_pool:q(default, ["TTL", Key]),
-
-            if Ttl > 0 -> ok;
-               true ->
+            case eredis_pool:q(default, ["TTL", Key]) of
+                {ok, <<"-1">>} -> 
                     eredis_pool:q(default, ["SREM", SessListKey, SessionKey]),
-                    expired
+                    expired;
+                {ok, _} -> 
+                    ok
             end
     end.
 
