@@ -8,6 +8,9 @@
 %%%-------------------------------------------------------------------
 -module(msb3_session).
 
+%% Include
+-include("message_box3.hrl").
+
 %% API
 -export([add_new_session/2, update_expire/2, check_session_expire/2]).
 
@@ -23,7 +26,7 @@
 
 add_new_session(UserId, SessionKey) ->
     Key = get_list_key(UserId),
-    eredis_pool:q(default, ["SADD", Key, SessionKey]),
+    eredis_pool:q(?DB_SRV, ["SADD", Key, SessionKey]),
     update_expire(UserId, SessionKey).
 
 %%--------------------------------------------------------------------
@@ -35,7 +38,7 @@ add_new_session(UserId, SessionKey) ->
 update_expire(UserId, SessionKey) ->
     Key = get_key(SessionKey),
     {ok, Expire} = application:get_env(message_box3, session_expire),
-    eredis_pool:q(default, ["SETEX", Key, Expire, UserId]).
+    eredis_pool:q(?DB_SRV, ["SETEX", Key, Expire, UserId]).
 
 %%--------------------------------------------------------------------
 %% @doc 
@@ -50,12 +53,13 @@ check_session_expire(UserId, SessionKey) ->
     SessListKey = get_list_key(UserId),
     Key = get_key(SessionKey),
 
-    case eredis_pool:q(default, ["SISMEMBER", SessListKey, SessionKey]) of
+    case eredis_pool:q(?DB_SRV, ["SISMEMBER", SessListKey, SessionKey]) of
         {ok, <<"0">>} -> expired;
         {ok, <<"1">>} ->
-            case eredis_pool:q(default, ["TTL", Key]) of
+            case eredis_pool:q(?DB_SRV, ["TTL", Key]) of
                 {ok, <<"-1">>} -> 
-                    eredis_pool:q(default, ["SREM", SessListKey, SessionKey]),
+                    eredis_pool:q(?DB_SRV, 
+                                  ["SREM", SessListKey, SessionKey]),
                     expired;
                 {ok, _} -> 
                     ok

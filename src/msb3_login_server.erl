@@ -14,7 +14,10 @@
 -include("user.hrl").
 
 %% API
--export([start_link/0]).
+-export([start_link/1, stop/0, stop/1]).
+-export([authenticate/2, login/2]).
+
+%% Local API
 -export([authenticate/3, login/3]).
 
 %% gen_server callbacks
@@ -30,14 +33,42 @@
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc Starts the server
+%% @doc
+%% Starts the server
+%%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link() -> {ok, Pid::pid()} | ignore | {error, Error::atom()} ).
+-spec(start_link(Name_Or_Args::list()|atom()) -> 
+             {ok, Pid::pid()} | ignore | {error, Error::atom()}).
 
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(_Args) when is_list(_Args) ->
+    gen_server:start_link(?MODULE, [], []);
 
+start_link(Name) when is_atom(Name) ->
+    gen_server:start_link({local, Name}, ?MODULE, [], []).
+
+-spec(stop(Name_OR_Pid::atom()|pid()) -> ok ).
+
+stop(Name_OR_Pid) ->
+    gen_server:cast(Name_OR_Pid, {stop}).
+
+-spec(stop() -> ok ).
+
+stop() -> 
+    gen_server:cast(?MODULE, stop).
+
+%%--------------------------------------------------------------------
+%% @doc プロセスプールに対してauthenticate/3を要求する。
+%% @end
+%%--------------------------------------------------------------------
+-spec(authenticate(Name::string(), Password::string()) -> 
+             {ok, SessionKey::string()} | {error, password_incollect}).
+
+authenticate(Name, Password) when is_list(Name) and is_list(Password) ->
+    Worker = poolboy:checkout(msb3_login_server_pools),
+    Reply = msb3_login_server:authenticate(Worker, Name, Password),
+    poolboy:checkin(msb3_login_server_pools, Worker),
+    Reply.
 
 %%--------------------------------------------------------------------
 %% @doc 認証を行い、認証にパスしたらセッションキーを新たに生成して返す。
@@ -49,6 +80,18 @@ start_link() ->
 authenticate(Pid, Name, Password) when is_pid(Pid) and is_list(Name) and 
                                        is_list(Password) ->
     gen_server:call(Pid, {authenticate, Name, Password}).
+
+%%--------------------------------------------------------------------
+%% @doc 
+%% ユーザIdとセッションの組み合わせが既に認証済みか確認する
+%% 確認がとれた場合はセッションの有効期限を延ばす
+%% @end
+%%--------------------------------------------------------------------
+login(UserId, SessionKey)  when is_integer(UserId) and is_list(SessionKey) ->
+    Worker = poolboy:checkout(msb3_login_server_pools),
+    Reply = msb3_login_server:login(Worker, UserId, SessionKey),
+    poolboy:checkin(msb3_login_server_pools, Worker),
+    Reply.
 
 %%--------------------------------------------------------------------
 %% @doc 

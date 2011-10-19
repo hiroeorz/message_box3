@@ -25,16 +25,16 @@ add_mention_to_followers_test() ->
     msb3_util:sleep(100),
 
     ?assertEqual({ok, []}, 
-                 eredis_pool:q(default, ["LRANGE", "m_1", 0, -1])),
+                 eredis_pool:q({global, dbsrv}, ["LRANGE", "m_1", 0, -1])),
 
     ?assertEqual({ok, [MsgKey]}, 
-                 eredis_pool:q(default, ["LRANGE", "m_2", 0, -1])),
+                 eredis_pool:q({global, dbsrv}, ["LRANGE", "m_2", 0, -1])),
     
     ?assertEqual({ok, [MsgKey]}, 
-                 eredis_pool:q(default, ["LRANGE", "m_3", 0, -1])),
+                 eredis_pool:q({global, dbsrv}, ["LRANGE", "m_3", 0, -1])),
 
     ?assertEqual({ok, []}, 
-                 eredis_pool:q(default, ["LRANGE", "m_4", 0, -1])),
+                 eredis_pool:q({global, dbsrv}, ["LRANGE", "m_4", 0, -1])),
 
     test_after().
     
@@ -45,53 +45,53 @@ add_mention_to_followers_test() ->
 
 test_before() ->
     eredis_pool:start(),
-    eredis_pool:create_pool(default, 10),
-    eredis_pool:q(default, ["DEL", <<"max_usr_id">>]),
+    eredis_pool:create_pool(dbsrv, 10),
+    eredis_pool:q({global, dbsrv}, ["DEL", <<"max_usr_id">>]),
     
     lists:map(fun(Id) -> 
                       Key = list_to_binary("h_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 10001)),
 
     lists:map(fun(Id) -> 
                       Key = list_to_binary("follower_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("follow_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("m_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("usr_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)),
     mention_send_server:start_link(?NAME).
 
 test_after() ->
-    eredis_pool:q(default, ["DEL", <<"max_usr_id">>]),
+    eredis_pool:q({global, dbsrv}, ["DEL", <<"max_usr_id">>]),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("h_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 10001)),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("follower_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("follow_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("m_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("usr_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)),
 
     mention_send_server:stop(?NAME).

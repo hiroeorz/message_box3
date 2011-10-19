@@ -8,6 +8,9 @@
 %%%-------------------------------------------------------------------
 -module(user_relation).
 
+%% Include
+-include("message_box3.hrl").
+
 %% API
 -export([add_follower/2, get_followers/1, add_follow/2, get_follows/1]).
 
@@ -24,7 +27,7 @@
 
 add_follower(UserId, FollowUserId) ->
     Key = get_follower_list_Key(UserId),
-    {ok, CountBin} = eredis_pool:q(default, ["RPUSH", Key, FollowUserId]),
+    {ok, CountBin} = eredis_pool:q(?DB_SRV, ["RPUSH", Key, FollowUserId]),
     Count = list_to_integer(binary_to_list(CountBin)),
     {ok, Count}.
 
@@ -36,7 +39,7 @@ add_follower(UserId, FollowUserId) ->
 
 get_followers(UserId) ->
     Key = get_follower_list_Key(UserId),
-    {ok, List} = eredis_pool:q(default, ["LRANGE", Key, 0, -1]),
+    {ok, List} = eredis_pool:q(?DB_SRV, ["LRANGE", Key, 0, -1]),
     lists:map(fun(IdBin) -> list_to_integer(binary_to_list(IdBin)) end, List).
 
 %%%===================================================================
@@ -52,7 +55,7 @@ get_followers(UserId) ->
 
 add_follow(UserId, FollowUserId) ->
     Key = get_follow_list_Key(UserId),
-    {ok, CountBin} = eredis_pool:q(default, ["RPUSH", Key, FollowUserId]),
+    {ok, CountBin} = eredis_pool:q(?DB_SRV, ["RPUSH", Key, FollowUserId]),
     Count = list_to_integer(binary_to_list(CountBin)),
     {ok, Count}.
 
@@ -64,7 +67,7 @@ add_follow(UserId, FollowUserId) ->
 
 get_follows(UserId) ->
     Key = get_follow_list_Key(UserId),
-    {ok, List} = eredis_pool:q(default, ["LRANGE", Key, 0, -1]),
+    {ok, List} = eredis_pool:q(?DB_SRV, ["LRANGE", Key, 0, -1]),
     lists:map(fun(IdBin) -> list_to_integer(binary_to_list(IdBin)) end, List).
 
 %%%===================================================================

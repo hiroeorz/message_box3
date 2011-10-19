@@ -11,6 +11,7 @@
 %% Include
 -include_lib("eunit/include/eunit.hrl").
 -include("message.hrl").
+-include("message_box3.hrl").
 
 -define(MaxIdKey, <<"max_message_id">>).
 
@@ -45,7 +46,8 @@ save_message(UserId, Text, InReplyTo) when is_integer(UserId) and
                        in_reply_to=InReplyTo, user_id=UserId},
     
     Key = get_message_Key(Id),
-    case eredis_pool:q(default, ["SET", Key, term_to_binary(Message)]) of
+    case eredis_pool:q(?DB_SRV, 
+                       ["SET", Key, term_to_binary(Message)]) of
         {ok, <<"OK">>}  -> {ok, Id, Key};
         {error, Reason} -> {error, Reason}
     end.
@@ -61,7 +63,7 @@ save_message(UserId, Text, InReplyTo) when is_integer(UserId) and
 get_message(Id) ->
     Key = get_message_Key(Id),
 
-    case eredis_pool:q(default, ["GET", Key]) of
+    case eredis_pool:q(?DB_SRV, ["GET", Key]) of
         {ok, Bin} -> binary_to_term(Bin);
         Error     -> Error
     end.
@@ -81,7 +83,7 @@ get_message_list([MsgId| _] = MessageIdList) when is_list(MessageIdList) and
 
 get_message_list([Key| _] = KeyList) when is_list(KeyList) and
                                             is_binary(Key) ->
-    case eredis_pool:q(default, ["MGET" | KeyList]) of
+    case eredis_pool:q(?DB_SRV, ["MGET" | KeyList]) of
         {ok, BinList} -> 
             {ok, lists:map(fun(Bin) ->
                                    case Bin of
@@ -98,7 +100,7 @@ get_message_list([Key| _] = KeyList) when is_list(KeyList) and
 %%%===================================================================
 
 get_next_id() ->
-    {ok, MaxIdBin} = eredis_pool:q(default, ["INCR", ?MaxIdKey]),
+    {ok, MaxIdBin} = eredis_pool:q(?DB_SRV, ["INCR", ?MaxIdKey]),
     list_to_integer(binary_to_list(MaxIdBin)).
 
 get_message_Key(Id) when is_integer(Id) ->

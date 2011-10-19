@@ -41,25 +41,25 @@ get_id_list_test() ->
 %%%===================================================================
 test_before() ->
     eredis_pool:start(),
-    eredis_pool:create_pool(default, 10),
-    eredis_pool:q(default, ["DEL", <<"max_usr_id">>]),
+    eredis_pool:create_pool(dbsrv, 10),
+    eredis_pool:q({global, dbsrv}, ["DEL", <<"max_usr_id">>]),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("usr_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 10001)),
     lists:map(fun(Name) -> 
                       Key = list_to_binary("usr_name_index_" ++ Name),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, ["shin"]).
 
 test_after() ->
-    eredis_pool:q(default, ["DEL", <<"max_usr_id">>]),
+    eredis_pool:q({global, dbsrv}, ["DEL", <<"max_usr_id">>]),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("usr_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 10001)),
     lists:map(fun(Name) -> 
                       Key = list_to_binary("usr_name_index_" ++ Name),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, ["shin"]).
 

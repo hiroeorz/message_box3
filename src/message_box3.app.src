@@ -10,14 +10,6 @@
   {mod, { message_box3_app, []}},
   {env, [
           {session_expire, 86400},
-          {eredis_pools, [
-                   {default, [
-                              {size, 100},
-                              {max_overflow, 100},
-                              {host, "127.0.0.1"},
-                              {port, 6379}
-                             ]}
-                  ]},
           {home_send_server_pools, [
                    {home_send_server_pool, [
                               {size, 40},
@@ -35,6 +27,13 @@
                               {size, 40},
                               {max_overflow, 40}
                              ]}
+                  ]},
+          {msb3_login_server_pools, [
+                   {msb3_login_server_pool, [
+                              {size, 20},
+                              {max_overflow, 40}
+                             ]}
                   ]}
+
   ]}
  ]}.

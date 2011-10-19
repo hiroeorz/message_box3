@@ -10,6 +10,7 @@
 
 %%Include
 -include_lib("eunit/include/eunit.hrl").
+-include("message_box3.hrl").
 
 %% API
 -export([add_message_key/2, get_timeline/2]).
@@ -27,7 +28,7 @@
 
 add_message_key(UserId, MsgKey) when is_integer(UserId) and is_binary(MsgKey) ->
     MentionsKey = get_key(UserId),
-    {ok, _} = eredis_pool:q(default, ["RPUSH", MentionsKey, MsgKey]),
+    {ok, _} = eredis_pool:q(?DB_SRV, ["RPUSH", MentionsKey, MsgKey]),
     ok.
 
 %%--------------------------------------------------------------------
@@ -40,7 +41,7 @@ add_message_key(UserId, MsgKey) when is_integer(UserId) and is_binary(MsgKey) ->
 
 get_timeline(UserId, Count) ->
     MentionsKey = get_key(UserId),
-    {ok, KeyList} = eredis_pool:q(default, 
+    {ok, KeyList} = eredis_pool:q(?DB_SRV, 
                                   ["LRANGE", MentionsKey, (0 - Count), -1]),
     message:get_message_list(KeyList).
 

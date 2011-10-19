@@ -27,20 +27,20 @@ add_message_test() ->
 
 test_before() ->
     eredis_pool:start(),
-    eredis_pool:create_pool(default, 10),
-    eredis_pool:q(default, ["DEL", <<"max_message_id">>]),
+    eredis_pool:create_pool(dbsrv, 10),
+    eredis_pool:q({global, dbsrv}, ["DEL", <<"max_message_id">>]),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("msg_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 1000)),
 
     message_send_server:start_link(?NAME).
 
 test_after() ->
-    eredis_pool:q(default, ["DEL", <<"max_message_id">>]),
+    eredis_pool:q({global, dbsrv}, ["DEL", <<"max_message_id">>]),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("msg_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 1000)),
 
     message_send_server:stop(?NAME).

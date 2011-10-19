@@ -67,9 +67,9 @@ stop() ->
 add_message(UserId, Text, InReplyTo) when is_integer(UserId) and 
                                           is_list(Text) and
                                           is_integer(InReplyTo) ->
-    Worker = poolboy:checkout(mentions_send_server_pool),
+    Worker = poolboy:checkout(message_send_server_pool),
     Reply = message_send_server:add_message(Worker, UserId, Text, InReplyTo),
-    poolboy:checkin(mentions_send_server_pool, Worker),
+    poolboy:checkin(message_send_server_pool, Worker),
     Reply.
 
 %%--------------------------------------------------------------------

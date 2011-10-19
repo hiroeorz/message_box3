@@ -42,25 +42,25 @@ get_follows_test() ->
 
 test_before() ->
     eredis_pool:start(),
-    eredis_pool:create_pool(default, 10),
+    eredis_pool:create_pool(dbsrv, 10),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("follower_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("follow_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)).
 
 
 test_after() ->
     lists:map(fun(Id) -> 
                       Key = list_to_binary("follower_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)),
     lists:map(fun(Id) -> 
                       Key = list_to_binary("follow_" ++ integer_to_list(Id)),
-                      eredis_pool:q(default, ["DEL", Key])
+                      eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 100)).
 
 
