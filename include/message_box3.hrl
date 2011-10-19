@@ -1,0 +1,1 @@
+-define(DB_SRV, {global, dbsrv}).
