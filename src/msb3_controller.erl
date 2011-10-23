@@ -1,25 +1,27 @@
 %%%-------------------------------------------------------------------
-%%% @author Hiroe Shin <shin@u720170.xgsfmg6.imtp.tachikawa.mopera.net>
+%%% @author Hiroe Shin <shin@mac-hiroe-orz-17.local>
 %%% @copyright (C) 2011, Hiroe Shin
 %%% @doc
 %%%
 %%% @end
-%%% Created : 16 Oct 2011 by Hiroe Shin <shin@u720170.xgsfmg6.imtp.tachikawa.mopera.net>
+%%% Created : 23 Oct 2011 by Hiroe Shin <shin@mac-hiroe-orz-17.local>
 %%%-------------------------------------------------------------------
--module(home_send_server).
+-module(msb3_controller).
 
 -behaviour(gen_server).
 
+
 %% Include
--include_lib("eunit/include/eunit.hrl").
+-include("user.hrl").
 
 %% API
--export([start_link/1, stop/0, stop/1]).
--export([add_home_to_followers/2, add_home_to_followers/3]).
+-export([start_link/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
+-export([create_user/3, get_user/1, authenticate/2]).
+
 
 -define(SERVER, ?MODULE). 
 
@@ -29,59 +31,28 @@
 %%% API
 %%%===================================================================
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts the server
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec(start_link(Name_Or_Args::list()|atom()) -> 
-             {ok, Pid::pid()} | ignore | {error, Error::atom()}).
+-spec(start_link() -> {ok, Pid::pid()} | ignore | {error, Error::atom()}).
 
-start_link(_Args) when is_list(_Args) ->
-    gen_server:start_link(?MODULE, [], []);
+start_link() ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-start_link(Name) when is_atom(Name) ->
-    gen_server:start_link({local, Name}, ?MODULE, [], []).
+-spec(create_user(Name::string(), Mail::string(), Password::string()) -> 
+             {ok, UserId::integer()} | {error, Reason::binary()}).
 
--spec(stop(Name_OR_Pid::atom()|pid()) -> ok ).
+create_user(Name, Mail, Password) when is_list(Name) and is_list(Mail) and 
+                                       is_list(Password) ->
+    gen_server:call(?SERVER, {create_user, Name, Mail, Password}).
 
-stop(Name_OR_Pid) ->
-    gen_server:cast(Name_OR_Pid, {stop}).
+-spec(get_user(UserId::integer()) -> {ok, User::#user{}} | {error, not_found}).
 
--spec(stop() -> ok ).
+get_user(UserId) when is_integer(UserId) ->
+    gen_server:call(?SERVER, {get_user, UserId}).
 
-stop() -> 
-    gen_server:cast(?MODULE, stop).
+-spec(authenticate(Name::string(), Password::string()) -> 
+             {ok, SessionKey::string()} | {error, password_incollect}).
 
-%%--------------------------------------------------------------------
-%% @doc 
-%% プロセスプールからワーカーを一つ取り出して以下の処理を行います。
-%% 受け取ったIdのユーザの各フォロワーのhomeにメッセージIdを保存する。
-%% 処理は非同期に行います。
-%% @end
-%%--------------------------------------------------------------------
--spec(add_home_to_followers(UserId::integer(), MsgKey::binary()) -> ok).
-
-add_home_to_followers(UserId, MsgKey) when is_integer(UserId) and 
-                                           is_binary(MsgKey) ->
-    Worker = poolboy:checkout(home_send_server_pool),
-    Reply = home_send_server:add_home_to_followers(Worker, UserId, MsgKey),
-    poolboy:checkin(home_send_server_pool, Worker),
-    Reply.
-
-%%--------------------------------------------------------------------
-%% @doc 
-%% 受け取ったIdのユーザの全フォロワーのhomeに受け取ったメッセージへのキーを保存する。
-%% 処理は非同期に行います。
-%% @end
-%%--------------------------------------------------------------------
--spec(add_home_to_followers(Name_OR_Pid::pid()|atom(), 
-                            UserId::integer(), MsgKey::binary()) -> ok).
-
-add_home_to_followers(Name_OR_Pid, UserId, MsgKey) when is_integer(UserId) and 
-                                                        is_binary(MsgKey) ->
-    gen_server:cast(Name_OR_Pid, {add_home_to_followers, UserId, MsgKey}).
+authenticate(Name, Password) when is_list(Name) and is_list(Password) ->
+    gen_server:call(?SERVER, {authenticate, Name, Password}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -115,9 +86,34 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+handle_call({create_user, Name, Mail, Password}, From, State) ->
+    spawn_link(fun() ->
+                       Reply = msb3_user:add_user(Name, Mail, Password),
+                       gen_server:reply(From, Reply)
+               end),
+
+    {noreply, State};
+
+handle_call({get_user, UserId}, From, State) ->
+    spawn_link(fun() ->
+                       Reply = case msb3_user:get_user(UserId) of
+                                   {ok, User} -> 
+                                       User#user{password = undefined};
+                                   {error, not_found} ->
+                                       {error, not_found}
+                               end,
+                       gen_server:reply(From, Reply)
+               end),
+
+    {noreply, State};
+
+handle_call({authenticate, Name, Password}, From, State) ->
+    spawn_link(fun() ->
+                       Reply = msb3_login_server:authenticate(Name, Password),
+                       gen_server:reply(From, Reply)
+               end),
+
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -129,15 +125,7 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({stop}, State) ->
-    {stop, normal, State};
-
-handle_cast({add_home_to_followers, UserId, MsgKey}, State) ->
-    Followers = user_relation:get_followers(UserId),
-    lists:map(fun(Id) ->
-                      home_timeline:add_message_key(Id, MsgKey)
-              end, Followers),
-
+handle_cast(_Msg, State) ->
     {noreply, State}.
 
 %%--------------------------------------------------------------------

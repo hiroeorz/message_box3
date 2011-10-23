@@ -57,6 +57,16 @@ init([]) ->
                             Restart, Shutdown, Type, 
                             [message_send_server_sup, message_send_server]},
 
+    LoginServerSup = {msb3_login_server_sup, 
+                      {msb3_login_server_sup, start_link, []},
+                      Restart, Shutdown, Type, 
+                      [msb3_login_server_sup, msb3_login_server]},
+
+    Controller = {msb3_controller, 
+                  {msb3_controller, start_link, []},
+                  Restart, Shutdown, Type, 
+                  [msb3_controller_sup, msb3_controller]},
+    
     {ok, {SupFlags, [HomeSendServerSup, MentionSendServerSup,
-                     MessageSendServerSup]}}.
+                     MessageSendServerSup, LoginServerSup, Controller]}}.
 

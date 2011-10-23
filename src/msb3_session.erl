@@ -9,6 +9,7 @@
 -module(msb3_session).
 
 %% Include
+-include_lib("eunit/include/eunit.hrl").
 -include("message_box3.hrl").
 
 %% API
@@ -38,7 +39,8 @@ add_new_session(UserId, SessionKey) ->
 update_expire(UserId, SessionKey) ->
     Key = get_key(SessionKey),
     {ok, Expire} = application:get_env(message_box3, session_expire),
-    eredis_pool:q(?DB_SRV, ["SETEX", Key, Expire, UserId]).
+    {ok, <<"OK">>} = eredis_pool:q(?DB_SRV, ["SETEX", Key, Expire, UserId]),
+    ok.
 
 %%--------------------------------------------------------------------
 %% @doc 

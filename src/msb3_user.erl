@@ -57,7 +57,7 @@ get_user(Id) when is_integer(Id) ->
     Key = "usr_" ++ integer_to_list(Id),
     case eredis_pool:q(?DB_SRV, ["GET", Key]) of
         {ok, undefined} -> {error, not_found};
-        {ok, User} -> {ok, User}
+        {ok, User} -> {ok, binary_to_term(User)}
     end.
 
 -spec(get_id(Name::string()) -> {ok, integer()} | {error, not_found}).

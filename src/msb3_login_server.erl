@@ -11,6 +11,7 @@
 -behaviour(gen_server).
 
 %% Include
+-include_lib("eunit/include/eunit.hrl").
 -include("user.hrl").
 
 %% API
@@ -65,9 +66,9 @@ stop() ->
              {ok, SessionKey::string()} | {error, password_incollect}).
 
 authenticate(Name, Password) when is_list(Name) and is_list(Password) ->
-    Worker = poolboy:checkout(msb3_login_server_pools),
+    Worker = poolboy:checkout(msb3_login_server_pool),
     Reply = msb3_login_server:authenticate(Worker, Name, Password),
-    poolboy:checkin(msb3_login_server_pools, Worker),
+    poolboy:checkin(msb3_login_server_pool, Worker),
     Reply.
 
 %%--------------------------------------------------------------------
@@ -77,9 +78,9 @@ authenticate(Name, Password) when is_list(Name) and is_list(Password) ->
 -spec(authenticate(Pid::pid(), Name::string(), Password::string()) -> 
              {ok, SessionKey::string()} | {error, password_incollect}).
 
-authenticate(Pid, Name, Password) when is_pid(Pid) and is_list(Name) and 
-                                       is_list(Password) ->
-    gen_server:call(Pid, {authenticate, Name, Password}).
+authenticate(Name_Or_Pid, Name, Password) when is_list(Name) and 
+                                               is_list(Password) ->
+    gen_server:call(Name_Or_Pid, {authenticate, Name, Password}).
 
 %%--------------------------------------------------------------------
 %% @doc 
@@ -88,9 +89,9 @@ authenticate(Pid, Name, Password) when is_pid(Pid) and is_list(Name) and
 %% @end
 %%--------------------------------------------------------------------
 login(UserId, SessionKey)  when is_integer(UserId) and is_list(SessionKey) ->
-    Worker = poolboy:checkout(msb3_login_server_pools),
+    Worker = poolboy:checkout(msb3_login_server_pool),
     Reply = msb3_login_server:login(Worker, UserId, SessionKey),
-    poolboy:checkin(msb3_login_server_pools, Worker),
+    poolboy:checkin(msb3_login_server_pool, Worker),
     Reply.
 
 %%--------------------------------------------------------------------
@@ -99,9 +100,9 @@ login(UserId, SessionKey)  when is_integer(UserId) and is_list(SessionKey) ->
 %% 確認がとれた場合はセッションの有効期限を延ばす
 %% @end
 %%--------------------------------------------------------------------
-login(Pid, UserId, SessionKey)  when is_pid(Pid) and is_integer(UserId) and 
-                                     is_list(SessionKey) ->
-    gen_server:call(Pid, {login, UserId, SessionKey}).
+login(Name_Or_Pid, UserId, SessionKey)  when is_integer(UserId) and 
+                                             is_list(SessionKey) ->
+    gen_server:cast(Name_Or_Pid, {login, UserId, SessionKey}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -140,12 +141,10 @@ handle_call({authenticate, Name, Password}, _From, State) ->
                 {ok, User} ->
                     CryptedPassword = 
                         msb3_util:create_crypted_password(User, Password),
-                    
                     if User#user.password == CryptedPassword ->
                             Id = User#user.id,
-                            Password = User#user.password,
                             SessionKey = msb3_util:create_session_key(Id, 
-                                                                      Password),
+                                                            User#user.password),
                             ok = msb3_session:update_expire(Id, SessionKey),
                             {ok, SessionKey};
                        true ->
@@ -167,6 +166,9 @@ handle_call({authenticate, Name, Password}, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({stop}, State) ->
+    {stop, normal, State};
+
 handle_cast({login, UserId, SessionKey}, State) ->
     case msb3_session:check_session_expire(UserId, SessionKey) of
         ok -> 
