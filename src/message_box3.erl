@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 23 Oct 2011 by Hiroe Shin <shin@mac-hiroe-orz-17.local>
 %%%-------------------------------------------------------------------
--module(msb3_controller).
+-module(message_box3).
 
 -behaviour(gen_server).
 
@@ -22,10 +22,10 @@
          terminate/2, code_change/3]).
 -export([create_user/3, get_user/1, authenticate/2]).
 
-
 -define(SERVER, ?MODULE). 
+-define(MAX_CONNECTIONS, 10000).
 
--record(state, {}).
+-record(state, {connection_count ::integer()}).
 
 %%%===================================================================
 %%% API
@@ -36,23 +36,53 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% ユーザを新規に作成する。
+%%
+%% @end
+%%--------------------------------------------------------------------
 -spec(create_user(Name::string(), Mail::string(), Password::string()) -> 
              {ok, UserId::integer()} | {error, Reason::binary()}).
 
 create_user(Name, Mail, Password) when is_list(Name) and is_list(Mail) and 
                                        is_list(Password) ->
-    gen_server:call(?SERVER, {create_user, Name, Mail, Password}).
+    Fun = fun() -> msb3_user:add_user(Name, Mail, Password) end,
+    gen_server:call(?SERVER, {parallel, Fun}).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% ユーザ情報を取得する
+%%
+%% @end
+%%--------------------------------------------------------------------
 -spec(get_user(UserId::integer()) -> {ok, User::#user{}} | {error, not_found}).
 
 get_user(UserId) when is_integer(UserId) ->
-    gen_server:call(?SERVER, {get_user, UserId}).
+    Fun = fun() ->
+                  case msb3_user:get_user(UserId) of
+                      {ok, User} -> 
+                          {ok, User#user{password = undefined}};
+                      {error, not_found} ->
+                          {error, not_found}
+                  end
+          end,
 
+    gen_server:call(?SERVER, {parallel, Fun}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% 認証を実行し、以後要求を実行する為のセッションキーを得る。
+%%
+%% @end
+%%--------------------------------------------------------------------
 -spec(authenticate(Name::string(), Password::string()) -> 
              {ok, SessionKey::string()} | {error, password_incollect}).
 
 authenticate(Name, Password) when is_list(Name) and is_list(Password) ->
-    gen_server:call(?SERVER, {authenticate, Name, Password}).
+    Fun = fun() -> msb3_login_server:authenticate(Name, Password) end,
+    gen_server:call(?SERVER, {parallel, Fun}).
+
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -70,7 +100,7 @@ authenticate(Name, Password) when is_list(Name) and is_list(Password) ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    {ok, #state{}}.
+    {ok, #state{connection_count = 0}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -86,34 +116,13 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({create_user, Name, Mail, Password}, From, State) ->
-    spawn_link(fun() ->
-                       Reply = msb3_user:add_user(Name, Mail, Password),
+handle_call({parallel, Fun}, From, State) ->
+    spawn_link(fun() -> 
+                       Reply = Fun(),
                        gen_server:reply(From, Reply)
                end),
-
-    {noreply, State};
-
-handle_call({get_user, UserId}, From, State) ->
-    spawn_link(fun() ->
-                       Reply = case msb3_user:get_user(UserId) of
-                                   {ok, User} -> 
-                                       User#user{password = undefined};
-                                   {error, not_found} ->
-                                       {error, not_found}
-                               end,
-                       gen_server:reply(From, Reply)
-               end),
-
-    {noreply, State};
-
-handle_call({authenticate, Name, Password}, From, State) ->
-    spawn_link(fun() ->
-                       Reply = msb3_login_server:authenticate(Name, Password),
-                       gen_server:reply(From, Reply)
-               end),
-
     {noreply, State}.
+
 
 %%--------------------------------------------------------------------
 %% @private
@@ -125,7 +134,7 @@ handle_call({authenticate, Name, Password}, From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast(_Msg, State) ->
+handle_cast(_Request, State) ->
     {noreply, State}.
 
 %%--------------------------------------------------------------------
