@@ -23,7 +23,6 @@
 -export([create_user/3, get_user/1, authenticate/2]).
 
 -define(SERVER, ?MODULE). 
--define(MAX_CONNECTIONS, 10000).
 
 -record(state, {connection_count ::integer()}).
 
