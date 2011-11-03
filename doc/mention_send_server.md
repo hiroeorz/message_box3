@@ -23,10 +23,10 @@ __Authors:__ Hiroe Shin ([`shin@u720170.xgsfmg6.imtp.tachikawa.mopera.net`](mail
 プロセスプールからワーカーを一つ取り出して以下の処理を行います。
 受け取ったテキストからリプライ送信先ユーザを特定して各ユーザのmentionsリストに
 メッセージのキーを保存します。
-処理は同期的に行います。.</td></tr><tr><td valign="top"><a href="#add_mention-3">add_mention/3</a></td><td>
+処理は非同期に行います。.</td></tr><tr><td valign="top"><a href="#add_mention-3">add_mention/3</a></td><td>
 受け取ったテキストからリプライ送信先ユーザを特定して各ユーザのmentionsリストに
 メッセージのキーを保存します。
-処理は同期的に行います。.</td></tr><tr><td valign="top"><a href="#start_link-1">start_link/1</a></td><td>
+処理は非同期に行います。.</td></tr><tr><td valign="top"><a href="#start_link-1">start_link/1</a></td><td>
 Starts the server.</td></tr><tr><td valign="top"><a href="#stop-0">stop/0</a></td><td></td></tr><tr><td valign="top"><a href="#stop-1">stop/1</a></td><td></td></tr></table>
 
 
@@ -51,7 +51,7 @@ Starts the server.</td></tr><tr><td valign="top"><a href="#stop-0">stop/0</a></t
 プロセスプールからワーカーを一つ取り出して以下の処理を行います。
 受け取ったテキストからリプライ送信先ユーザを特定して各ユーザのmentionsリストに
 メッセージのキーを保存します。
-処理は同期的に行います。<a name="add_mention-3"></a>
+処理は非同期に行います。<a name="add_mention-3"></a>
 
 ###add_mention/3##
 
@@ -67,7 +67,7 @@ Starts the server.</td></tr><tr><td valign="top"><a href="#stop-0">stop/0</a></t
 
 受け取ったテキストからリプライ送信先ユーザを特定して各ユーザのmentionsリストに
 メッセージのキーを保存します。
-処理は同期的に行います。<a name="start_link-1"></a>
+処理は非同期に行います。<a name="start_link-1"></a>
 
 ###start_link/1##
 
