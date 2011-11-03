@@ -20,9 +20,12 @@ __Authors:__ Hiroe Shin ([`shin@mac-hiroe-orz-17.local`](mailto:shin@mac-hiroe-o
 
 
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#authenticate-2">authenticate/2</a></td><td>
-認証を実行し、以後要求を実行する為のセッションキーを得る。.</td></tr><tr><td valign="top"><a href="#create_user-3">create_user/3</a></td><td>
+認証を実行し、以後要求を実行する為のセッションキーを得る。.</td></tr><tr><td valign="top"><a href="#connect_dbsrv-1">connect_dbsrv/1</a></td><td>
+Connect to eredis_pool database server.</td></tr><tr><td valign="top"><a href="#create_user-3">create_user/3</a></td><td>
 ユーザを新規に作成する。.</td></tr><tr><td valign="top"><a href="#get_user-1">get_user/1</a></td><td>
-ユーザ情報を取得する.</td></tr><tr><td valign="top"><a href="#start_link-0">start_link/0</a></td><td></td></tr></table>
+ユーザ情報を取得する.</td></tr><tr><td valign="top"><a href="#start-0">start/0</a></td><td>
+Start Server。.</td></tr><tr><td valign="top"><a href="#start_link-0">start_link/0</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-1">start_link/1</a></td><td></td></tr><tr><td valign="top"><a href="#stop-0">stop/0</a></td><td>
+Stop Server。.</td></tr></table>
 
 
 <a name="functions"></a>
@@ -44,6 +47,21 @@ __Authors:__ Hiroe Shin ([`shin@mac-hiroe-orz-17.local`](mailto:shin@mac-hiroe-o
 
 
 認証を実行し、以後要求を実行する為のセッションキーを得る。
+<a name="connect_dbsrv-1"></a>
+
+###connect_dbsrv/1##
+
+
+
+
+<pre>connect_dbsrv(Node::node()) -&gt; true | false</pre>
+<br></br>
+
+
+
+
+
+Connect to eredis_pool database server.
 <a name="create_user-3"></a>
 
 ###create_user/3##
@@ -74,6 +92,21 @@ __Authors:__ Hiroe Shin ([`shin@mac-hiroe-orz-17.local`](mailto:shin@mac-hiroe-o
 
 
 ユーザ情報を取得する
+<a name="start-0"></a>
+
+###start/0##
+
+
+
+
+<pre>start() -&gt; ok</pre>
+<br></br>
+
+
+
+
+
+Start Server。
 <a name="start_link-0"></a>
 
 ###start_link/0##
@@ -85,3 +118,29 @@ __Authors:__ Hiroe Shin ([`shin@mac-hiroe-orz-17.local`](mailto:shin@mac-hiroe-o
 <br></br>
 
 
+<a name="start_link-1"></a>
+
+###start_link/1##
+
+
+
+
+<pre>start_link(X1::list()) -&gt; {ok, Pid::pid()} | ignore | {error, Error::atom()}</pre>
+<br></br>
+
+
+<a name="stop-0"></a>
+
+###stop/0##
+
+
+
+
+<pre>stop() -&gt; ok</pre>
+<br></br>
+
+
+
+
+
+Stop Server。

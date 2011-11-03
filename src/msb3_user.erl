@@ -72,6 +72,7 @@ get_id(Name) ->
 
 -spec(get_id_list(NameList::[string()]) -> [integer()] ).
 
+get_id_list([]) -> [];
 get_id_list(NameList) when is_list(NameList) ->
     KeyList = lists:map(fun(Name) -> ?USER_NAME_INDEX_KEY ++ Name end, 
                         NameList),

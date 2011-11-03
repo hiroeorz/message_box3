@@ -57,6 +57,54 @@ basic_test_() ->
                  ?assertMatch({error, password_incollect}, 
                               message_box3:authenticate("taro", "incollect"))
          end
+       },
+
+       { "1がメッセージを送信する",
+         fun() ->
+                 {ok, SessionKey} = 
+                     message_box3:authenticate("taro", "password1"),
+
+                 Result = message_box3:send_message(1, SessionKey, 
+                                                    "hello :-)", undefined),
+                 ?assertMatch({ok, _}, Result)
+         end
+       },
+
+       { "メッセージを送信の為のログインに失敗する",
+         fun() ->
+                 Result = message_box3:send_message(1, "invalid", 
+                                                    "hello :-)", undefined),
+                 ?assertMatch({error, session_expired}, Result)
+         end
+       },
+
+       { "1が2をフォローする",
+         fun() ->
+                 {ok, SessionKey} = 
+                     message_box3:authenticate("taro", "password1"),
+
+                 Result = message_box3:follow(1, SessionKey, 2),
+                 ?assertEqual({ok, {follow, 1}, {follower, 0}}, Result)
+         end
+       },
+
+       { "1が2をフォロー為のログインに失敗する",
+         fun() ->
+                 Result = message_box3:follow(1, "invalid", 2),
+                 ?assertMatch({error, session_expired}, Result) 
+         end
+       },
+
+       { "1が3のフォローを外す",
+         fun() ->
+                 {ok, SessionKey} = 
+                     message_box3:authenticate("taro", "password1"),
+
+                 {ok, _, _} = message_box3:follow(1, SessionKey, 3),
+                 Result = message_box3:unfollow(1, SessionKey, 3),
+                 ?assertEqual({ok, {follow, 1}, {follower, 0}}, Result)
+         end
+
        }
 
       ]

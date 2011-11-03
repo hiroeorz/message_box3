@@ -10,6 +10,12 @@
   {mod, { message_box3_app, []}},
   {env, [
           {session_expire, 86400},
+          {msb3_worker_pools, [
+                   {msb3_worker_pool, [
+                              {size, 1000},
+                              {max_overflow, 100}
+                             ]}
+                  ]},
           {home_send_server_pools, [
                    {home_send_server_pool, [
                               {size, 40},

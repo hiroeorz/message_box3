@@ -42,6 +42,11 @@ init([]) ->
     Shutdown = 2000,
     Type = worker,
 
+    WorkerSup = {message_box3_worker_sup, 
+                         {message_box3_worker_sup, start_link, []},
+                         Restart, Shutdown, Type, 
+                         [message_box3_worker_sup, message_box3]},
+
     HomeSendServerSup = {home_send_server_sup, 
                          {home_send_server_sup, start_link, []},
                          Restart, Shutdown, Type, 
@@ -61,12 +66,10 @@ init([]) ->
                       {msb3_login_server_sup, start_link, []},
                       Restart, Shutdown, Type, 
                       [msb3_login_server_sup, msb3_login_server]},
-
-    MainController = {message_box3, 
-                      {message_box3, start_link, []},
-                      Restart, Shutdown, Type, 
-                      [message_box3]},
     
-    {ok, {SupFlags, [HomeSendServerSup, MentionSendServerSup,
-                     MessageSendServerSup, LoginServerSup, MainController]}}.
+    {ok, {SupFlags, [HomeSendServerSup, 
+                     MentionSendServerSup, 
+                     MessageSendServerSup, 
+                     LoginServerSup,
+                     WorkerSup]}}.
 

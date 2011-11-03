@@ -102,7 +102,7 @@ login(UserId, SessionKey)  when is_integer(UserId) and is_list(SessionKey) ->
 %%--------------------------------------------------------------------
 login(Name_Or_Pid, UserId, SessionKey)  when is_integer(UserId) and 
                                              is_list(SessionKey) ->
-    gen_server:cast(Name_Or_Pid, {login, UserId, SessionKey}).
+    gen_server:call(Name_Or_Pid, {login, UserId, SessionKey}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -145,6 +145,7 @@ handle_call({authenticate, Name, Password}, _From, State) ->
                             Id = User#user.id,
                             SessionKey = msb3_util:create_session_key(Id, 
                                                             User#user.password),
+                            ok = msb3_session:add_new_session(Id, SessionKey),
                             ok = msb3_session:update_expire(Id, SessionKey),
                             {ok, SessionKey};
                        true ->
@@ -154,7 +155,19 @@ handle_call({authenticate, Name, Password}, _From, State) ->
                     {error, password_incollect}
             end,
 
+    {reply, Reply, State};
+
+handle_call({login, UserId, SessionKey}, _From, State) ->
+    Reply = case msb3_session:check_session_expire(UserId, SessionKey) of
+                ok -> 
+                    msb3_session:update_expire(UserId, SessionKey),
+                    ok;
+                expired ->
+                    expired
+            end,
+
     {reply, Reply, State}.
+
 
 %%--------------------------------------------------------------------
 %% @private
@@ -167,18 +180,7 @@ handle_call({authenticate, Name, Password}, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_cast({stop}, State) ->
-    {stop, normal, State};
-
-handle_cast({login, UserId, SessionKey}, State) ->
-    case msb3_session:check_session_expire(UserId, SessionKey) of
-        ok -> 
-            msb3_session:update_expire(UserId, SessionKey),
-            ok;
-        expired ->
-            expired
-    end,
-
-    {noreply, State}.
+    {stop, normal, State}.
 
 %%--------------------------------------------------------------------
 %% @private

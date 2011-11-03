@@ -65,8 +65,7 @@ stop() ->
     {error, Reason::binary()}).
 
 add_message(UserId, Text, InReplyTo) when is_integer(UserId) and 
-                                          is_list(Text) and
-                                          is_integer(InReplyTo) ->
+                                          is_list(Text) ->
     Worker = poolboy:checkout(message_send_server_pool),
     Reply = message_send_server:add_message(Worker, UserId, Text, InReplyTo),
     poolboy:checkin(message_send_server_pool, Worker),
@@ -82,8 +81,7 @@ add_message(UserId, Text, InReplyTo) when is_integer(UserId) and
     {error, Reason::binary()}).
 
 add_message(Name_OR_Pid, UserId, Text, InReplyTo) when is_integer(UserId) and
-                                                       is_list(Text) and
-                                                       is_integer(InReplyTo) ->
+                                                       is_list(Text)  ->
     gen_server:call(Name_OR_Pid, {add_message, UserId, Text, InReplyTo}).
 
 %%%===================================================================

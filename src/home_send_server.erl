@@ -136,7 +136,7 @@ handle_cast({add_home_to_followers, UserId, MsgKey}, State) ->
     Followers = user_relation:get_followers(UserId),
     lists:map(fun(Id) ->
                       home_timeline:add_message_key(Id, MsgKey)
-              end, Followers),
+              end, [UserId | Followers]),
 
     {noreply, State}.
 

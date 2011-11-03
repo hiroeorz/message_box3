@@ -60,22 +60,22 @@ stop() ->
 %% プロセスプールからワーカーを一つ取り出して以下の処理を行います。
 %% 受け取ったテキストからリプライ送信先ユーザを特定して各ユーザのmentionsリストに
 %% メッセージのキーを保存します。
-%% 処理は同期的に行います。
+%% 処理は非同期に行います。
 %% @end
 %%--------------------------------------------------------------------
 -spec(add_mention(MsgKey::binary(), TextBin::binary()) -> ok).
 
 add_mention(MsgKey, TextBin) when is_binary(MsgKey) and is_binary(TextBin) ->
-    Worker = poolboy:checkout(mentions_send_server_pool),
+    Worker = poolboy:checkout(mention_send_server_pool),
     Reply = mention_send_server:add_mention(Worker, MsgKey, TextBin),
-    poolboy:checkin(mentions_send_server_pool, Worker),
+    poolboy:checkin(mention_send_server_pool, Worker),
     Reply.
 
 %%--------------------------------------------------------------------
 %% @doc 
 %% 受け取ったテキストからリプライ送信先ユーザを特定して各ユーザのmentionsリストに
 %% メッセージのキーを保存します。
-%% 処理は同期的に行います。
+%% 処理は非同期に行います。
 %% @end
 %%--------------------------------------------------------------------
 -spec(add_mention(Name_OR_Pid::pid()|atom(), 

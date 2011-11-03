@@ -17,6 +17,7 @@
 <tr><td><a href="message_box3.md" class="module">message_box3</a></td></tr>
 <tr><td><a href="message_box3_app.md" class="module">message_box3_app</a></td></tr>
 <tr><td><a href="message_box3_sup.md" class="module">message_box3_sup</a></td></tr>
+<tr><td><a href="message_box3_worker_sup.md" class="module">message_box3_worker_sup</a></td></tr>
 <tr><td><a href="message_send_server.md" class="module">message_send_server</a></td></tr>
 <tr><td><a href="message_send_server_sup.md" class="module">message_send_server_sup</a></td></tr>
 <tr><td><a href="msb3_login_server.md" class="module">msb3_login_server</a></td></tr>

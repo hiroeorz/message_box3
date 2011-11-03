@@ -15,6 +15,12 @@ add_follower_test() ->
     ?assertEqual({ok, 2}, user_relation:add_follower(1, 112)),
     ?assertEqual({ok, 3}, user_relation:add_follower(1, 123)),
     test_after().
+
+delete_follower_test() ->
+    test_before(),
+    ?assertEqual({ok, 1}, user_relation:add_follower(1, 101)),
+    ?assertEqual({ok, 0}, user_relation:delete_follower(1, 101)),
+    test_after().
     
 get_followers_test() ->
     UserId = 1,
@@ -27,6 +33,12 @@ add_follow_test() ->
     ?assertEqual({ok, 1}, user_relation:add_follow(1, 101)),
     ?assertEqual({ok, 2}, user_relation:add_follow(1, 112)),
     ?assertEqual({ok, 3}, user_relation:add_follow(1, 123)),
+    test_after().
+
+delete_follow_test() ->
+    test_before(),
+    ?assertEqual({ok, 1}, user_relation:add_follow(1, 101)),
+    ?assertEqual({ok, 0}, user_relation:delete_follow(1, 101)),
     test_after().
     
 get_follows_test() ->
