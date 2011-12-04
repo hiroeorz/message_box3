@@ -16,7 +16,7 @@ authenticate_test() ->
 
     {ok, _} = msb3_user:add_user("usr1", "usr1@mail", "pass1"),
 
-    ?assertMatch({ok, _}, 
+    ?assertMatch({ok, _, _}, 
                  msb3_login_server:authenticate(?NAME, "usr1", "pass1")),
 
     ?assertEqual({error, password_incollect}, 
@@ -36,7 +36,8 @@ authenticate_test() ->
 login_test() ->
     test_before(),
     {ok, _} = msb3_user:add_user("usr1", "usr1@mail", "pass1"),
-    {ok, SessionKey} = msb3_login_server:authenticate(?NAME, "usr1", "pass1"),
+    {ok, SessionKey, _Id} = msb3_login_server:authenticate(?NAME, 
+                                                              "usr1", "pass1"),
     ?assertEqual(ok, msb3_login_server:login(?NAME, 1, SessionKey)),
     test_after().    
     

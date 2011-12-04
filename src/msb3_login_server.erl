@@ -139,15 +139,16 @@ init([]) ->
 handle_call({authenticate, Name, Password}, _From, State) ->
     Reply = case msb3_user:get_user(Name) of
                 {ok, User} ->
-                    CryptedPassword = 
+                    CryptedPass = 
                         msb3_util:create_crypted_password(User, Password),
-                    if User#user.password == CryptedPassword ->
+
+                    if User#user.password == CryptedPass ->
                             Id = User#user.id,
-                            SessionKey = msb3_util:create_session_key(Id, 
-                                                            User#user.password),
+                            SessionKey = msb3_util:create_session_key(Id,
+                                                                   CryptedPass),
                             ok = msb3_session:add_new_session(Id, SessionKey),
                             ok = msb3_session:update_expire(Id, SessionKey),
-                            {ok, SessionKey};
+                            {ok, SessionKey, Id};
                        true ->
                             {error, password_incollect}
                     end;

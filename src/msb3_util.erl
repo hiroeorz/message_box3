@@ -17,6 +17,7 @@
 -define(KEY_PHRASE_1, "message_box3").
 -define(KEY_PHRASE_2, "SHIMANE").
 -define(KEY_PHRASE_3, "MATSUE").
+-define(TokenSeedRecycleCount, 3).
 
 %%%===================================================================
 %%% API
@@ -40,23 +41,30 @@ sleep(MSec) when is_integer(MSec) ->
 -spec(create_session_key(Id::integer(), Password::string()) -> 
              SessionKey::string()).
 
-create_session_key(Id, Password) when is_integer(Id) and is_list(Password) ->
-    {Megaseconds, Seconds, Microseconds} = erlang:now(),
-    TimeStr = integer_to_list(Megaseconds) ++
-        integer_to_list(Seconds) ++
-        integer_to_list(Microseconds),
+create_session_key(Id, TokenSeed) when is_integer(Id) and 
+                                       is_list(TokenSeed) ->
+    create_session_key(Id, TokenSeed, ?TokenSeedRecycleCount).
 
-    SessionKey = crypto:sha([TimeStr, 
-                             atom_to_list(node()), 
-                             integer_to_list(Id),
-                             Password]),
+create_session_key(Id, TokenSeed, Count) ->
+    TimeStr = get_time_str(),
+    TokenBin = crypto:sha([TimeStr, 
+                           atom_to_list(node()), 
+                           integer_to_list(Id), 
+                           TokenSeed]),
 
-    lists:flatten(lists:map(fun(X) -> 
-                                    io_lib:format("~.16X", [X, ""]) 
-                            end, 
-                            binary_to_list(SessionKey))).
-    
+    Token = lists:flatten(lists:map(fun(X) -> 
+                                            io_lib:format("~.16X", [X, ""]) 
+                                    end, 
+                                    binary_to_list(TokenBin))),
+    case Count of
+        0 -> Token;
+        _ -> create_session_key(Id, Token, Count - 1)
+    end.
 
+%%--------------------------------------------------------------------
+%% @doc 保存の為に暗号化されたパスワードを生成します。
+%% @end
+%%--------------------------------------------------------------------
 -spec(create_crypted_password(User::#user{}, Password::string()) ->
              CryptedPassword::string()).
 
@@ -84,3 +92,9 @@ create_crypted_password(User, Password) when is_list(Password)->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+get_time_str() ->
+    {Megaseconds, Seconds, Microseconds} = erlang:now(),
+    integer_to_list(Megaseconds) ++
+        integer_to_list(Seconds) ++
+        integer_to_list(Microseconds).

@@ -48,7 +48,7 @@ basic_test_() ->
 
        { "認証を実行してセッションキーを取得する",
          fun() ->
-                 ?assertMatch({ok, _}, 
+                 ?assertMatch({ok, _, _}, 
                               message_box3:authenticate("taro", "password1")),
 
                  ?assertMatch({error, password_incollect}, 
@@ -61,7 +61,7 @@ basic_test_() ->
 
        { "1がメッセージを送信する",
          fun() ->
-                 {ok, SessionKey} = 
+                 {ok, SessionKey, _Id} = 
                      message_box3:authenticate("taro", "password1"),
 
                  Result = message_box3:send_message(1, SessionKey, 
@@ -80,7 +80,7 @@ basic_test_() ->
 
        { "1が2をフォローする",
          fun() ->
-                 {ok, SessionKey} = 
+                 {ok, SessionKey, _Id} = 
                      message_box3:authenticate("taro", "password1"),
 
                  Result = message_box3:follow(1, SessionKey, 2),
@@ -97,7 +97,7 @@ basic_test_() ->
 
        { "1が3のフォローを外す",
          fun() ->
-                 {ok, SessionKey} = 
+                 {ok, SessionKey, _Id} = 
                      message_box3:authenticate("taro", "password1"),
 
                  {ok, _, _} = message_box3:follow(1, SessionKey, 3),

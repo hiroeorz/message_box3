@@ -29,7 +29,7 @@
 
 -define(SERVER, ?MODULE). 
 
--record(state, {connection_count ::integer()}).
+-record(state, {}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -123,10 +123,9 @@ authenticate(Name, Password) when is_list(Name) and is_list(Password) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%
+%% ユーザーのホームタイムラインを取得する。
 %%
 %% @end
-%% @todo 実装
 %%--------------------------------------------------------------------
 
 get_home_timeline(UserId, SessionKey, Count) ->
@@ -137,10 +136,9 @@ get_home_timeline(UserId, SessionKey, Count) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%
+%% ユーザーのリプライタイムラインを取得する。
 %%
 %% @end
-%% @todo 実装
 %%--------------------------------------------------------------------
 
 get_mentions_timeline(UserId, SessionKey, Count) ->
@@ -151,10 +149,9 @@ get_mentions_timeline(UserId, SessionKey, Count) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%
+%% ユーザーの送信タイムラインを取得する。
 %%
 %% @end
-%% @todo 実装
 %%--------------------------------------------------------------------
 
 get_sent_timeline(UserId, SessionKey, Count) ->
@@ -165,10 +162,9 @@ get_sent_timeline(UserId, SessionKey, Count) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%%
+%% メッセージを送信する。
 %%
 %% @end
-%% @todo 実装
 %%--------------------------------------------------------------------
 -spec(send_message(UserId::integer(), SessionKey::string(), Text::string(), 
                    InReplyTo::integer()|undefined) -> 
@@ -184,7 +180,7 @@ send_message(UserId, SessionKey, Text, InReplyTo) when is_integer(UserId) and
 
 %%--------------------------------------------------------------------
 %% @doc
-%%
+%% 他のユーザをフォローする。
 %%
 %% @end
 %% @todo 実装
@@ -205,10 +201,9 @@ follow(UserId, SessionKey, FollowUserId) when is_integer(UserId) and
 
 %%--------------------------------------------------------------------
 %% @doc
-%%
+%% フォロー中のユーザをフォローリストから外す。
 %%
 %% @end
-%% @todo 実装
 %%--------------------------------------------------------------------
 -spec(unfollow(UserId::integer(), SessionKey::string(), FollowUserId::integer()) -> 
              {ok, 
@@ -241,7 +236,7 @@ unfollow(UserId, SessionKey, UnFollowUserId) when is_integer(UserId) and
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    {ok, #state{connection_count = 0}}.
+    {ok, #state{}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -257,13 +252,6 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({parallel, Fun}, From, State) ->
-    spawn_link(fun() -> 
-                       Reply = Fun(),
-                       gen_server:reply(From, Reply)
-               end),
-    {noreply, State};
-
 handle_call({create_user, Name, Mail, Password}, _From, State) ->
     Reply = msb3_user:add_user(Name, Mail, Password),
     {reply, Reply, State};
