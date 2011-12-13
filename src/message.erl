@@ -82,7 +82,7 @@ get_message_list([MsgId| _] = MessageIdList) when is_list(MessageIdList) and
     get_message_list(KeyList);
 
 get_message_list([Key| _] = KeyList) when is_list(KeyList) and
-                                            is_binary(Key) ->
+                                          is_binary(Key) ->
     case eredis_pool:q(?DB_SRV, ["MGET" | KeyList]) of
         {ok, BinList} -> 
             {ok, lists:map(fun(Bin) ->
