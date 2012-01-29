@@ -42,10 +42,10 @@ init([]) ->
     Shutdown = 2000,
     Type = worker,
 
-    WorkerSup = {message_box3_worker_sup, 
-                         {message_box3_worker_sup, start_link, []},
-                         Restart, Shutdown, Type, 
-                         [message_box3_worker_sup, message_box3]},
+    MessageBox3 = {message_box3, 
+                   {message_box3, start_link, []},
+                   Restart, Shutdown, Type, 
+                   [message_box3]},
 
     HomeSendServerSup = {home_send_server_sup, 
                          {home_send_server_sup, start_link, []},
@@ -71,5 +71,5 @@ init([]) ->
                      MentionSendServerSup, 
                      MessageSendServerSup, 
                      LoginServerSup,
-                     WorkerSup]}}.
+                     MessageBox3]}}.
 

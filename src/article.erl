@@ -16,7 +16,7 @@
 -define(MaxIdKey, <<"max_article_id">>).
 
 %% API
--export([save_article/3, delete_article/2, get_list/3]).
+-export([create/3, update/4, delete/2, get_list/3]).
 
 %%%===================================================================
 %%% API
@@ -27,28 +27,41 @@
 %% 受け取った記事を保存します。
 %% @end
 %%--------------------------------------------------------------------
--spec(save_article(UserId::integer(), Title::binary(), Text::binary()) ->
+-spec(create(UserId::integer(), Title::binary(), Text::binary()) ->
              {ok, Id::integer(), Key::binary()} | {error, Reason::atom()}).
 
-save_article(UserId, Title, Text) when is_integer(UserId) and
+create(UserId, Title, Text) when is_integer(UserId) and
                                        is_binary(Title) and
                                        is_binary(Text) ->
     Id = get_next_id(),
     DateTime = {date(), time()},
     Article = #article{id=Id, title=Title, text=Text, created_at=DateTime,
                        updated_at=DateTime, user_id=UserId},
+    save(UserId, Id, Article).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% 記事を更新します。
+%% @end
+%%--------------------------------------------------------------------
+-spec(update(UserId::integer(), Id::integer(), 
+             Title::binary(), Text::binary()) -> 
+             {ok, Id::integer(), Key::binary()} | {error, atom()}).
+update(UserId, Id, Title, Text) when is_integer(UserId) and
+                                       is_binary(Title) and
+                                       is_binary(Text) ->
     Key = get_message_Key(Id),
-    ListKey = get_users_list_key(UserId),
-
-    case eredis_pool:q(?DB_SRV, 
-                       ["SET", Key, term_to_binary(Article)]) of
-        {ok, <<"OK">>}  ->
-            case eredis_pool:q(?DB_SRV, ["RPUSH", ListKey, Key]) of
-                {ok, _}         -> {ok, Id, Key};
-                {error, Reason} -> {error, Reason}
-            end;
-        {error, Reason} -> 
+    case eredis_pool:q(?DB_SRV, ["GET", Key]) of
+        {ok, undefined} ->
+            {error, not_found};
+        {ok, ArticleBin} ->
+            DateTime = {date(), time()},
+            Article = binary_to_term(ArticleBin),
+            NewArticle = Article#article{title = Title, 
+                                         text = Text,
+                                         updated_at = DateTime},
+            save(UserId, Id, NewArticle);
+        {error, Reason} ->
             {error, Reason}
     end.
 
@@ -57,10 +70,10 @@ save_article(UserId, Title, Text) when is_integer(UserId) and
 %% 受け取ったIdの記事を削除します。
 %% @end
 %%--------------------------------------------------------------------
--spec(delete_article(UserId::integer(), Id::integer()) ->
+-spec(delete(UserId::integer(), Id::integer()) ->
              {ok, deleted} | {error, Reason::atom()}).
 
-delete_article(UserId, Id) ->
+delete(UserId, Id) ->
     Key = get_message_Key(Id),
     ListKey = get_users_list_key(UserId),
 
@@ -112,6 +125,20 @@ get_list(UserId, StartCount, EndCount) when is_integer(UserId) and
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+save(UserId, Id, Article) ->
+    Key = get_message_Key(Id),
+    ListKey = get_users_list_key(UserId),
+    case eredis_pool:q(?DB_SRV, 
+                       ["SET", Key, term_to_binary(Article)]) of
+        {ok, <<"OK">>}  ->
+            case eredis_pool:q(?DB_SRV, ["RPUSH", ListKey, Key]) of
+                {ok, _}         -> {ok, Id, Key};
+                {error, Reason} -> {error, Reason}
+            end;
+        {error, Reason} -> 
+            {error, Reason}
+    end.    
 
 get_next_id() ->
     {ok, MaxIdBin} = eredis_pool:q(?DB_SRV, ["INCR", ?MaxIdKey]),

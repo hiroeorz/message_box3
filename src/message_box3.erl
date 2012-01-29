@@ -90,9 +90,7 @@ start_link(_) ->
 
 create_user(Name, Mail, Password) when is_list(Name) and is_list(Mail) and 
                                        is_list(Password) ->
-    call(fun(Worker) ->
-                 gen_server:call(Worker, {create_user, Name, Mail, Password})
-         end).
+    gen_server:call(?SERVER, {create_user, Name, Mail, Password}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -103,9 +101,7 @@ create_user(Name, Mail, Password) when is_list(Name) and is_list(Mail) and
 -spec(get_user(UserId::integer()) -> {ok, User::#user{}} | {error, not_found}).
 
 get_user(UserId) when is_integer(UserId) ->
-    call(fun(Worker) ->
-                 gen_server:call(Worker, {get_user, UserId})
-         end).
+    gen_server:call(?SERVER, {get_user, UserId}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -117,9 +113,7 @@ get_user(UserId) when is_integer(UserId) ->
              {ok, SessionKey::string()} | {error, password_incollect}).
 
 authenticate(Name, Password) when is_list(Name) and is_list(Password) ->
-    call(fun(Worker) ->
-                 gen_server:call(Worker, {authenticate, Name, Password})
-         end).
+    gen_server:call(?SERVER, {authenticate, Name, Password}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -127,12 +121,11 @@ authenticate(Name, Password) when is_list(Name) and is_list(Password) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
+-spec(get_home_timeline(UserId::integer(), SessionKey::string(), Count::integer())
+      -> {ok, [tuple()]} | {error, Reason::binary()}).
 
 get_home_timeline(UserId, SessionKey, Count) ->
-    call(fun(Worker) ->
-                 gen_server:call(Worker, 
-                                 {get_home_timeline, UserId, SessionKey, Count})
-         end).
+    gen_server:call(?SERVER, {get_home_timeline, UserId, SessionKey, Count}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -140,12 +133,11 @@ get_home_timeline(UserId, SessionKey, Count) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
+-spec(get_mentions_timeline(UserId::integer(), SessionKey::string(), Count::integer())
+      -> {ok, [tuple()]} | {error, Reason::binary()}).
 
 get_mentions_timeline(UserId, SessionKey, Count) ->
-    call(fun(Worker) ->
-                 gen_server:call(Worker, 
-                                 {get_mentions_timeline, UserId, SessionKey, Count})
-         end).
+    gen_server:call(?SERVER, {get_mentions_timeline, UserId, SessionKey, Count}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -153,12 +145,11 @@ get_mentions_timeline(UserId, SessionKey, Count) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
+-spec(get_sent_timeline(UserId::integer(), SessionKey::string(), Count::integer())
+      -> {ok, [tuple()]} | {error, Reason::binary()}).
 
 get_sent_timeline(UserId, SessionKey, Count) ->
-    call(fun(Worker) ->
-                 gen_server:call(Worker, 
-                                 {get_sent_timeline, UserId, SessionKey, Count})
-         end).
+    gen_server:call(?SERVER, {get_sent_timeline, UserId, SessionKey, Count}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -173,10 +164,7 @@ get_sent_timeline(UserId, SessionKey, Count) ->
 send_message(UserId, SessionKey, Text, InReplyTo) when is_integer(UserId) and
                                                        is_list(SessionKey) and
                                                        is_list(Text) ->
-    call(fun(Worker) ->
-                 gen_server:call(Worker, 
-                                 {send_message, UserId, SessionKey, Text, InReplyTo})
-         end).
+    gen_server:call(?SERVER, {send_message, UserId, SessionKey, Text, InReplyTo}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -194,10 +182,7 @@ send_message(UserId, SessionKey, Text, InReplyTo) when is_integer(UserId) and
 follow(UserId, SessionKey, FollowUserId) when is_integer(UserId) and
                                               is_list(SessionKey) and
                                               is_integer(FollowUserId) ->
-    call(fun(Worker) ->
-                 gen_server:call(Worker, 
-                                 {follow, UserId, SessionKey, FollowUserId})
-         end).
+    gen_server:call(?SERVER, {follow, UserId, SessionKey, FollowUserId}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -214,11 +199,7 @@ follow(UserId, SessionKey, FollowUserId) when is_integer(UserId) and
 unfollow(UserId, SessionKey, UnFollowUserId) when is_integer(UserId) and
                                               is_list(SessionKey) and
                                               is_integer(UnFollowUserId) ->
-    call(fun(Worker) ->
-                 gen_server:call(Worker, 
-                                 {unfollow, UserId, SessionKey, UnFollowUserId})
-         end).
-
+    gen_server:call(?SERVER, {unfollow, UserId, SessionKey, UnFollowUserId}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -252,81 +233,111 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({create_user, Name, Mail, Password}, _From, State) ->
-    Reply = msb3_user:add_user(Name, Mail, Password),
-    {reply, Reply, State};
+handle_call({create_user, Name, Mail, Password}, From, State) ->
+    spawn(fun() ->
+                  Reply = msb3_user:add_user(Name, Mail, Password),
+                  gen_server:reply(From, Reply)
+          end),
+    {noreply, State};
 
-handle_call({get_user, UserId}, _From, State) ->
-    Reply = case msb3_user:get_user(UserId) of
-                {ok, User}         -> {ok, User#user{password = undefined}};
-                {error, not_found} -> {error, not_found}
-            end,
-    {reply, Reply, State};
+handle_call({get_user, UserId}, From, State) ->
+    spawn(fun() ->
+                  Reply = case msb3_user:get_user(UserId) of
+                              {ok, User}         -> {ok, User#user{password = undefined}};
+                              {error, not_found} -> {error, not_found}
+                          end,
+                  gen_server:reply(From, Reply)
+          end),
+    {noreply, State};
 
-handle_call({authenticate, Name, Password}, _From, State) ->
-    Reply = msb3_login_server:authenticate(Name, Password),
-    {reply, Reply, State};
+handle_call({authenticate, Name, Password}, From, State) ->
+    spawn(fun() ->
+                  Reply = msb3_login_server:authenticate(Name, Password),
+                  gen_server:reply(From, Reply)
+          end),
 
-handle_call({get_home_timeline, UserId, SessionKey, Count}, _From, State) ->
-    Reply = case msb3_login_server:login(UserId, SessionKey) of
-                ok      -> home_timeline:get_timeline(UserId, Count);
-                expired -> {error, session_expired}
-            end,
-    {reply, Reply, State};
+    {noreply, State};
 
-handle_call({get_mentions_timeline, UserId, SessionKey, Count}, _From, State) ->
-    Reply = case msb3_login_server:login(UserId, SessionKey) of
-                ok      -> mentions_timeline:get_timeline(UserId, Count);
-                expired -> {error, session_expired}
-            end,
-    {reply, Reply, State};
+handle_call({get_home_timeline, UserId, SessionKey, Count}, From, State) ->
+    spawn(fun() ->
+                  Reply = case msb3_login_server:login(UserId, SessionKey) of
+                              ok      -> home_timeline:get_timeline(UserId, Count);
+                              expired -> {error, session_expired}
+                          end,
+                  gen_server:reply(From, Reply)
+          end),
+    {noreply, State};
 
-handle_call({get_sent_timeline, UserId, SessionKey, Count}, _From, State) ->
-    Reply = case msb3_login_server:login(UserId, SessionKey) of
-                ok      -> sent_timeline:get_timeline(UserId, Count);
-                expired -> {error, session_expired}
-            end,
-    {reply, Reply, State};
+handle_call({get_mentions_timeline, UserId, SessionKey, Count}, From, State) ->
+    spawn(fun() ->
+                  Reply = case msb3_login_server:login(UserId, SessionKey) of
+                              ok      -> mentions_timeline:get_timeline(UserId, Count);
+                              expired -> {error, session_expired}
+                          end,
+                  gen_server:reply(From, Reply)
+          end),
+    {noreply, State};
 
-handle_call({send_message, UserId, SessionKey, Text, InReplyTo}, _From, State) ->
-    Reply = case msb3_login_server:login(UserId, SessionKey) of
-                ok      -> 
-                    {ok, MsgId, MsgKey} = 
-                        message_send_server:add_message(UserId, Text, InReplyTo),
-                    TextBin = list_to_binary(Text),
-                    ok = mention_send_server:add_mention(MsgKey, TextBin),
-                    ok = home_send_server:add_home_to_followers(UserId, MsgKey),
-                    {ok, MsgId};
-                expired -> 
-                    {error, session_expired}
-            end,
-    {reply, Reply, State};
+handle_call({get_sent_timeline, UserId, SessionKey, Count}, From, State) ->
+    spawn(fun() ->
+                  Reply = case msb3_login_server:login(UserId, SessionKey) of
+                              ok      -> sent_timeline:get_timeline(UserId, Count);
+                              expired -> {error, session_expired}
+                          end,
+                  gen_server:reply(From, Reply)
+          end),
+    {noreply, State};
 
-handle_call({follow, UserId, SessionKey, FollowUserId}, _From, State) ->
-    Reply = case msb3_login_server:login(UserId, SessionKey) of
-                ok -> 
-                    {ok, FollowCount} = 
-                        user_relation:add_follow(UserId, FollowUserId),
-                    {ok, _} = user_relation:add_follower(FollowUserId, UserId),
-                    FollowerCount = user_relation:follower_count(UserId),
-                    {ok, {follow, FollowCount}, {follower, FollowerCount}};
-                expired -> 
-                    {error, session_expired}
-            end,
-    {reply, Reply, State};
+handle_call({send_message, UserId, SessionKey, Text, InReplyTo}, From, State) ->
+    spawn(fun() ->
+                  Reply = case msb3_login_server:login(UserId, SessionKey) of
+                              ok      -> 
+                                  {ok, MsgId, MsgKey} = 
+                                      message_send_server:add_message(UserId, Text, InReplyTo),
+                                  TextBin = list_to_binary(Text),
+                                  ok = mention_send_server:add_mention(MsgKey, TextBin),
+                                  ok = home_send_server:add_home_to_followers(UserId, MsgKey),
+                                  {ok, MsgId};
+                              expired -> 
+                                  {error, session_expired}
+                          end,
+                  gen_server:reply(From, Reply)
+          end),
+    {noreply, State};
 
-handle_call({unfollow, UserId, SessionKey, FollowUserId}, _From, State) ->
-    Reply = case msb3_login_server:login(UserId, SessionKey) of
-                ok -> 
-                    {ok, _} = user_relation:delete_follow(UserId, FollowUserId),
-                    {ok, _} = user_relation:delete_follower(FollowUserId, UserId),
-                    FollowCount = user_relation:follow_count(UserId),
-                    FollowerCount = user_relation:follower_count(UserId),
-                    {ok, {follow, FollowCount}, {follower, FollowerCount}};
-                expired -> 
-                    {error, session_expired}
-            end,
-    {reply, Reply, State}.
+handle_call({follow, UserId, SessionKey, FollowUserId}, From, State) ->
+    spawn(fun() ->
+                  Reply = 
+                      case msb3_login_server:login(UserId, SessionKey) of
+                          ok -> 
+                              {ok, FollowCount} = 
+                                  user_relation:add_follow(UserId, FollowUserId),
+                              {ok, _} = user_relation:add_follower(FollowUserId, UserId),
+                              FollowerCount = user_relation:follower_count(UserId),
+                              {ok, {follow, FollowCount}, {follower, FollowerCount}};
+                          expired -> 
+                              {error, session_expired}
+                      end,
+                  gen_server:reply(From, Reply)
+          end),                  
+    {noreply, State};
+
+handle_call({unfollow, UserId, SessionKey, FollowUserId}, From, State) ->
+    spawn(fun() ->
+                  Reply = 
+                      case msb3_login_server:login(UserId, SessionKey) of
+                          ok -> 
+                              {ok, _} = user_relation:delete_follow(UserId, FollowUserId),
+                              {ok, _} = user_relation:delete_follower(FollowUserId, UserId),
+                              FollowCount = user_relation:follow_count(UserId),
+                              FollowerCount = user_relation:follower_count(UserId),
+                              {ok, {follow, FollowCount}, {follower, FollowerCount}};
+                          expired -> 
+                              {error, session_expired}
+                      end,
+                  gen_server:reply(From, Reply)
+          end),
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -382,10 +393,3 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-call(Fun) ->
-    Worker = poolboy:checkout({global, msb3_worker_pool}),
-    Reply = Fun(Worker),
-    poolboy:checkin({global, msb3_worker_pool}, Worker),
-    Reply.
-
