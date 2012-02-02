@@ -17,7 +17,7 @@ __Authors:__ Hiroe Shin ([`hiroe.orz@gmail.com`](mailto:hiroe.orz@gmail.com)).<a
 ##Function Index##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#create_crypted_password-2">create_crypted_password/2</a></td><td></td></tr><tr><td valign="top"><a href="#create_session_key-2">create_session_key/2</a></td><td>与えられたIdとパスワードからセッションキーを生成します。.</td></tr><tr><td valign="top"><a href="#sleep-1">sleep/1</a></td><td>一定時間処理を停止します。.</td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#create_crypted_password-2">create_crypted_password/2</a></td><td>保存の為に暗号化されたパスワードを生成します。.</td></tr><tr><td valign="top"><a href="#create_session_key-2">create_session_key/2</a></td><td>与えられたIdとパスワードからセッションキーを生成します。.</td></tr><tr><td valign="top"><a href="#sleep-1">sleep/1</a></td><td>一定時間処理を停止します。.</td></tr></table>
 
 
 <a name="functions"></a>
@@ -35,7 +35,9 @@ __Authors:__ Hiroe Shin ([`hiroe.orz@gmail.com`](mailto:hiroe.orz@gmail.com)).<a
 <br></br>
 
 
-<a name="create_session_key-2"></a>
+
+
+保存の為に暗号化されたパスワードを生成します。<a name="create_session_key-2"></a>
 
 ###create_session_key/2##
 

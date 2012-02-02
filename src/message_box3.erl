@@ -16,7 +16,7 @@
 
 %% API
 -export([start/0, stop/0, connect_dbsrv/1]).
--export([start_link/0, start_link/1]).
+-export([start_link/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -37,7 +37,7 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start() -> ok).
+-spec start() -> ok.
 
 start() ->
     application:start(?MODULE).
@@ -48,7 +48,7 @@ start() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(stop() -> ok).
+-spec stop() -> ok.
 
 stop() ->
     application:stop(?MODULE).    
@@ -59,7 +59,8 @@ stop() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(connect_dbsrv(Node::node()) -> true | false).
+-spec connect_dbsrv(Node) -> true | false when
+      Node::node().
 
 connect_dbsrv(Node) ->
     net_kernel:connect(Node).
@@ -68,16 +69,13 @@ connect_dbsrv(Node) ->
 %%% API
 %%%===================================================================
 
--spec(start_link() -> {ok, Pid::pid()} | ignore | {error, Error::atom()}).
-
+-spec start_link() -> {ok, Pid} | ignore | {error, Error} when
+      Pid :: pid(),
+      Error :: atom().
+      
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
--spec(start_link(_::list()) -> {ok, Pid::pid()} | ignore | 
-                               {error, Error::atom()}).
-
-start_link(_) ->
-    gen_server:start_link(?MODULE, [], []).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -85,11 +83,14 @@ start_link(_) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(create_user(Name::string(), Mail::string(), Password::string()) -> 
-             {ok, UserId::integer()} | {error, Reason::binary()}).
+-spec create_user(Name, Mail, Password) -> {ok, UserId} | {error, Reason} when
+      Name :: string(), 
+      Mail :: string(), 
+      Password :: string(),
+      UserId :: integer(),
+      Reason :: binary().
 
-create_user(Name, Mail, Password) when is_list(Name) and is_list(Mail) and 
-                                       is_list(Password) ->
+create_user(Name, Mail, Password) ->
     gen_server:call(?SERVER, {create_user, Name, Mail, Password}).
 
 %%--------------------------------------------------------------------
@@ -98,9 +99,11 @@ create_user(Name, Mail, Password) when is_list(Name) and is_list(Mail) and
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(get_user(UserId::integer()) -> {ok, User::#user{}} | {error, not_found}).
+-spec get_user(UserId) -> {ok, User} | {error, not_found} when
+      UserId :: integer(),
+      User :: #user{}.
 
-get_user(UserId) when is_integer(UserId) ->
+get_user(UserId) ->
     gen_server:call(?SERVER, {get_user, UserId}).
 
 %%--------------------------------------------------------------------
@@ -109,10 +112,12 @@ get_user(UserId) when is_integer(UserId) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(authenticate(Name::string(), Password::string()) -> 
-             {ok, SessionKey::string()} | {error, password_incollect}).
+-spec authenticate(Name, Password) -> {ok, SessionKey} | {error, password_incollect} when
+      Name :: string(), 
+      Password :: string(),
+      SessionKey :: string().
 
-authenticate(Name, Password) when is_list(Name) and is_list(Password) ->
+authenticate(Name, Password) ->
     gen_server:call(?SERVER, {authenticate, Name, Password}).
 
 %%--------------------------------------------------------------------
@@ -121,8 +126,12 @@ authenticate(Name, Password) when is_list(Name) and is_list(Password) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(get_home_timeline(UserId::integer(), SessionKey::string(), Count::integer())
-      -> {ok, [tuple()]} | {error, Reason::binary()}).
+-spec get_home_timeline(UserId, SessionKey, Count)
+                       -> {ok, [tuple()]} | {error, Reason} when
+      UserId :: integer(), 
+      SessionKey :: string(), 
+      Count :: integer(),
+      Reason :: binary().
 
 get_home_timeline(UserId, SessionKey, Count) ->
     gen_server:call(?SERVER, {get_home_timeline, UserId, SessionKey, Count}).
@@ -133,8 +142,11 @@ get_home_timeline(UserId, SessionKey, Count) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(get_mentions_timeline(UserId::integer(), SessionKey::string(), Count::integer())
-      -> {ok, [tuple()]} | {error, Reason::binary()}).
+-spec get_mentions_timeline(UserId, SessionKey, Count)
+                           -> {ok, [tuple()]} | {error, Reason::binary()} when
+      UserId :: integer(), 
+      SessionKey :: string(), 
+      Count :: integer().
 
 get_mentions_timeline(UserId, SessionKey, Count) ->
     gen_server:call(?SERVER, {get_mentions_timeline, UserId, SessionKey, Count}).
@@ -145,8 +157,12 @@ get_mentions_timeline(UserId, SessionKey, Count) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(get_sent_timeline(UserId::integer(), SessionKey::string(), Count::integer())
-      -> {ok, [tuple()]} | {error, Reason::binary()}).
+-spec get_sent_timeline(UserId, SessionKey, Count) 
+                       -> {ok, [tuple()]} | {error, Reason} when
+      UserId :: integer(), 
+      SessionKey :: string(), 
+      Count :: integer(),
+      Reason :: binary().
 
 get_sent_timeline(UserId, SessionKey, Count) ->
     gen_server:call(?SERVER, {get_sent_timeline, UserId, SessionKey, Count}).
@@ -157,9 +173,14 @@ get_sent_timeline(UserId, SessionKey, Count) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(send_message(UserId::integer(), SessionKey::string(), Text::string(), 
-                   InReplyTo::integer()|undefined) -> 
-             {ok, MessageId::integer()} | {error, session_expired}).
+-spec send_message(UserId, SessionKey, Text, 
+                   InReplyTo|undefined) -> 
+             {ok, MessageId} | {error, session_expired} when
+      UserId :: integer(), 
+      SessionKey :: string(), 
+      Text :: string(), 
+      InReplyTo :: integer(),
+      MessageId :: integer().
 
 send_message(UserId, SessionKey, Text, InReplyTo) when is_integer(UserId) and
                                                        is_list(SessionKey) and
@@ -173,11 +194,17 @@ send_message(UserId, SessionKey, Text, InReplyTo) when is_integer(UserId) and
 %% @end
 %% @todo 実装
 %%--------------------------------------------------------------------
--spec(follow(UserId::integer(), SessionKey::string(), FollowUserId::integer()) -> 
-             {ok, 
-              {follow, FollowCount::integer()}, 
-              {follower, FollowerCount::integer()}} | 
-             {error, session_expired}).
+-spec follow(UserId, SessionKey, FollowUserId) -> 
+                    {ok, 
+                     {follow, FollowCount}, 
+                     {follower, FollowerCount}} | 
+                    {error, session_expired} when
+      UserId :: integer(), 
+      SessionKey :: string(), 
+      FollowUserId :: integer(),
+      FollowCount :: integer(),
+      FollowerCount :: integer().
+
 
 follow(UserId, SessionKey, FollowUserId) when is_integer(UserId) and
                                               is_list(SessionKey) and
@@ -190,11 +217,16 @@ follow(UserId, SessionKey, FollowUserId) when is_integer(UserId) and
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(unfollow(UserId::integer(), SessionKey::string(), FollowUserId::integer()) -> 
-             {ok, 
-              {follow, FollowCount::integer()}, 
-              {follower, FollowerCount::integer()}} | 
-             {error, session_expired}).
+-spec unfollow(UserId, SessionKey, FollowUserId) -> 
+                      {ok, 
+                       {follow, FollowCount}, 
+                       {follower, FollowerCount}} | 
+                      {error, session_expired} when
+      UserId :: integer(), 
+      SessionKey :: string(), 
+      FollowUserId :: integer(),
+      FollowCount :: integer(),
+      FollowerCount :: integer().
 
 unfollow(UserId, SessionKey, UnFollowUserId) when is_integer(UserId) and
                                               is_list(SessionKey) and

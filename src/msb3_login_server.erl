@@ -19,11 +19,12 @@
 %% @doc 認証を行い、認証にパスしたらセッションキーを新たに生成して返す。
 %% @end
 %%--------------------------------------------------------------------
--spec(authenticate(Name::string(), Password::string()) -> 
-             {ok, SessionKey::string()} | {error, password_incollect}).
+-spec authenticate(Name, Password) -> {ok, SessionKey} | {error, password_incollect} when
+      Name :: string(),
+      Password :: string(),
+      SessionKey :: string().
 
-authenticate(Name, Password) when is_list(Name) and 
-                                  is_list(Password) ->
+authenticate(Name, Password) ->
     case msb3_user:get_user(Name) of
         {ok, User} ->
             CryptedPass = 
@@ -49,9 +50,11 @@ authenticate(Name, Password) when is_list(Name) and
 %% 確認がとれた場合はセッションの有効期限を延ばす
 %% @end
 %%--------------------------------------------------------------------
--spec(login(UserId::integer(), SessionKey::string()) -> ok | expired).
+-spec login(UserId, SessionKey) -> ok | expired when
+      UserId::integer(),
+      SessionKey::string().
 
-login(UserId, SessionKey)  when is_integer(UserId) and is_list(SessionKey) ->
+login(UserId, SessionKey)  ->
     case msb3_session:check_session_expire(UserId, SessionKey) of
         ok -> 
             msb3_session:update_expire(UserId, SessionKey),

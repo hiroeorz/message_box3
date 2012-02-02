@@ -1,8 +1,5 @@
 {application,message_box3}.
 {packages,[]}.
-{modules,[home_send_server,home_send_server_sup,home_timeline,
-          mention_send_server,mention_send_server_sup,mentions_timeline,
-          message,message_box3,message_box3_app,message_box3_sup,
-          message_box3_worker_sup,message_send_server,message_send_server_sup,
-          msb3_login_server,msb3_login_server_sup,msb3_session,msb3_user,
-          msb3_util,sent_timeline,user_relation]}.
+{modules,[article,home_timeline,mentions_timeline,message,message_box3,
+          message_box3_app,message_box3_sup,msb3_login_server,msb3_session,
+          msb3_user,msb3_util,sent_timeline,user_relation]}.
