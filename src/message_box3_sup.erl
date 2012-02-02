@@ -46,30 +46,6 @@ init([]) ->
                    {message_box3, start_link, []},
                    Restart, Shutdown, Type, 
                    [message_box3]},
-
-    HomeSendServerSup = {home_send_server_sup, 
-                         {home_send_server_sup, start_link, []},
-                         Restart, Shutdown, Type, 
-                         [home_send_server_sup, home_send_server]},
-
-    MentionSendServerSup = {mention_send_server_sup, 
-                            {mention_send_server_sup, start_link, []},
-                            Restart, Shutdown, Type, 
-                            [mention_send_server_sup, mention_send_server]},
-
-    MessageSendServerSup = {message_send_server_sup, 
-                            {message_send_server_sup, start_link, []},
-                            Restart, Shutdown, Type, 
-                            [message_send_server_sup, message_send_server]},
-
-    LoginServerSup = {msb3_login_server_sup, 
-                      {msb3_login_server_sup, start_link, []},
-                      Restart, Shutdown, Type, 
-                      [msb3_login_server_sup, msb3_login_server]},
     
-    {ok, {SupFlags, [HomeSendServerSup, 
-                     MentionSendServerSup, 
-                     MessageSendServerSup, 
-                     LoginServerSup,
-                     MessageBox3]}}.
+    {ok, {SupFlags, [MessageBox3]}}.
 

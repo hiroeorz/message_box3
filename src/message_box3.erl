@@ -235,6 +235,7 @@ init([]) ->
 %%--------------------------------------------------------------------
 handle_call({create_user, Name, Mail, Password}, From, State) ->
     spawn(fun() ->
+                  
                   Reply = msb3_user:add_user(Name, Mail, Password),
                   gen_server:reply(From, Reply)
           end),
@@ -291,12 +292,18 @@ handle_call({get_sent_timeline, UserId, SessionKey, Count}, From, State) ->
 handle_call({send_message, UserId, SessionKey, Text, InReplyTo}, From, State) ->
     spawn(fun() ->
                   Reply = case msb3_login_server:login(UserId, SessionKey) of
-                              ok      -> 
-                                  {ok, MsgId, MsgKey} = 
-                                      message_send_server:add_message(UserId, Text, InReplyTo),
+                              ok -> 
+                                  {ok, MsgId, MsgKey} =
+                                      message:save_message(UserId, Text, InReplyTo),
+                                  
                                   TextBin = list_to_binary(Text),
-                                  ok = mention_send_server:add_mention(MsgKey, TextBin),
-                                  ok = home_send_server:add_home_to_followers(UserId, MsgKey),
+                                  spawn(fun() ->
+                                                mentions_timeline:add_mention(MsgKey, TextBin)
+                                        end),
+                                  spawn(fun() -> 
+                                                home_timeline:add_home_to_followers(UserId, 
+                                                                                    MsgKey)
+                                        end),
                                   {ok, MsgId};
                               expired -> 
                                   {error, session_expired}

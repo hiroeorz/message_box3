@@ -17,28 +17,27 @@ authenticate_test() ->
     {ok, _} = msb3_user:add_user("usr1", "usr1@mail", "pass1"),
 
     ?assertMatch({ok, _, _}, 
-                 msb3_login_server:authenticate(?NAME, "usr1", "pass1")),
+                 msb3_login_server:authenticate("usr1", "pass1")),
 
     ?assertEqual({error, password_incollect}, 
-                 msb3_login_server:authenticate(?NAME, "usr1", "incollect")),
+                 msb3_login_server:authenticate("usr1", "incollect")),
 
     ?assertEqual({error, password_incollect}, 
-                 msb3_login_server:authenticate(?NAME, "usr1", "")),
+                 msb3_login_server:authenticate("usr1", "")),
 
     ?assertEqual({error, password_incollect}, 
-                 msb3_login_server:authenticate(?NAME, "", "incollect")),
+                 msb3_login_server:authenticate("", "incollect")),
 
     ?assertEqual({error, password_incollect}, 
-                 msb3_login_server:authenticate(?NAME, "", "")),
+                 msb3_login_server:authenticate("", "")),
 
     test_after().    
 
 login_test() ->
     test_before(),
     {ok, _} = msb3_user:add_user("usr1", "usr1@mail", "pass1"),
-    {ok, SessionKey, _Id} = msb3_login_server:authenticate(?NAME, 
-                                                              "usr1", "pass1"),
-    ?assertEqual(ok, msb3_login_server:login(?NAME, 1, SessionKey)),
+    {ok, SessionKey, _Id} = msb3_login_server:authenticate("usr1", "pass1"),
+    ?assertEqual(ok, msb3_login_server:login(1, SessionKey)),
     test_after().    
     
 
@@ -60,8 +59,7 @@ test_before() ->
                                                integer_to_list(Id)),
                       eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 10)),
-    application:start(message_box3),
-    msb3_login_server:start_link(?NAME).
+    application:start(message_box3).
 
 test_after() ->
     lists:map(fun(Id) -> 
@@ -74,5 +72,4 @@ test_after() ->
                       eredis_pool:q({global, dbsrv}, ["DEL", Key])
               end, lists:seq(1, 10)),
 
-    application:stop(message_box3),
-    msb3_login_server:stop(?NAME).
+    application:stop(message_box3).

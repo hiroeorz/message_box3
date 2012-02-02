@@ -13,11 +13,26 @@
 -include("message_box3.hrl").
 
 %% API
--export([add_message_key/2, get_timeline/2]).
+-export([add_home_to_followers/2, add_message_key/2, get_timeline/2]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc 
+%% 受け取ったIdのユーザの全フォロワーのhomeに受け取ったメッセージへのキーを保存する。
+%% 処理は非同期に行います。
+%% @end
+%%--------------------------------------------------------------------
+-spec(add_home_to_followers(UserId::integer(), MsgKey::binary()) -> ok).
+
+add_home_to_followers(UserId, MsgKey) when is_integer(UserId) and 
+                                           is_binary(MsgKey) ->
+    Followers = user_relation:get_followers(UserId),
+    lists:map(fun(Id) -> add_message_key(Id, MsgKey) end, [UserId | Followers]),
+    ok.
+
 
 %%--------------------------------------------------------------------
 %% @doc
