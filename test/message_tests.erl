@@ -49,6 +49,8 @@ get_message_list_test() ->
     [Msg3 | Tail3] = Tail2, ?assertEqual(MsgId_3, Msg3#message.id),
     [Msg4 | Tail4] = Tail3, ?assertEqual(MsgId_4, Msg4#message.id),
     [Msg5 |     _] = Tail4, ?assertEqual(MsgId_5, Msg5#message.id),
+
+    {ok, []} = message:get_message_list([]),
     test_after().    
 
 test_before() ->

@@ -76,6 +76,8 @@ get_message(Id) ->
 -spec(get_message_list(MessageIdList::[integer()] | [binary()]) -> 
              {ok, [tuple()]} | {error, Reason::binary()}).
 
+get_message_list([]) -> {ok, []};
+
 get_message_list([MsgId| _] = MessageIdList) when is_list(MessageIdList) and
                                                   is_integer(MsgId) ->
     KeyList = lists:map(fun(Id) -> get_message_Key(Id) end, MessageIdList),
