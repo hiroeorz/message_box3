@@ -329,6 +329,8 @@ handle_call({send_message, UserId, SessionKey, Text, InReplyTo}, From, State) ->
                                       message:save_message(UserId, Text, InReplyTo),
                                   
                                   TextBin = list_to_binary(Text),
+                                  ok = sent_timeline:add_message_key(UserId, MsgKey),
+
                                   spawn(fun() ->
                                                 mentions_timeline:add_mention(MsgKey, TextBin)
                                         end),
